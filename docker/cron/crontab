@@ -1,0 +1,25 @@
+# docker/cron/crontab
+# Format : m h dom mon dow user command
+#
+# QUOI : Planification `app:radar:purge-expired` et `app:radar:reindex`.
+#
+# COMMENT : Logs vers stdout du conteneur (`/proc/1/fd/1`) ; utilisateur `www-data`.
+#
+# OÙ : Monté dans le service `cron`.
+#
+# POURQUOI : Index Pinecone à jour et purge des événements expirés sans intervention manuelle.
+#
+# Astuce diagnostic : `docker compose -f compose.prod.yaml exec cron crontab -u www-data -l`
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+HOME=/var/www/html
+APP_ENV=prod
+
+# Nettoyage quotidien à 03:00 — purge Pinecone des événements expirés depuis 2+ jours.
+0 3 * * * www-data cd /var/www/html && php bin/console app:radar:purge-expired --days=2 --no-interaction >> /proc/1/fd/1 2>&1
+
+# Réindexation horaire à la minute 0 — propage les nouvelles validations modérateur.
+0 * * * * www-data cd /var/www/html && php bin/console app:radar:reindex --no-interaction >> /proc/1/fd/1 2>&1
+
+# Ligne vide finale obligatoire pour cron (sinon la dernière tâche n'est pas chargée).

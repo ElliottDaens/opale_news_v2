@@ -1,0 +1,13 @@
+# security.yaml (routes)
+#
+# QUOI : Branche le chargeur de routes Symfony Security pour le chemin de logout généré automatiquement.
+#
+# COMMENT : `type: service` et `resource: security.route_loader.logout` délèguent au route loader interne du bundle Security.
+#
+# OÙ : Agrégé avec les autres imports de `config/routes/*.yaml` par le Kernel.
+#
+# POURQUOI : Assurer que la route `_security_logout` existe et suit la config du firewall sans la déclarer à la main.
+
+_security_logout:
+    resource: security.route_loader.logout
+    type: service

@@ -1,0 +1,778 @@
+/*
+event-detail.css
+
+QUOI : Mise en page dédiée à la page de détail d’un événement (`home/show.html.twig`).
+
+COMMENT : Layout en deux colonnes responsive, hero plein-largeur avec dégradé, sidebar « infos pratiques » sticky, carte Leaflet stylisée.
+
+OÙ : Inclus uniquement par `home/show.html.twig`.
+
+POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir `style.css`.
+*/
+
+/* ---------- Conteneur principal ---------- */
+
+.event-detail {
+    max-width: 1100px;
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-xl);
+}
+
+.event-detail__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--c-mer);
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: var(--space-md);
+    transition: color var(--duration-base, 200ms) var(--ease-out, ease-out),
+                transform var(--duration-base, 200ms) var(--ease-out, ease-out);
+}
+
+.event-detail__back:hover {
+    color: var(--c-marine);
+    transform: translateX(-3px);
+}
+
+.event-detail__warning {
+    background: linear-gradient(135deg, #fff5e6 0%, #ffe9c8 100%);
+    border-left: 4px solid var(--c-corail);
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm) var(--space-md);
+    margin-bottom: var(--space-md);
+    color: var(--c-corail-fonce);
+    font-weight: 500;
+}
+
+/* ---------- Hero ---------- */
+
+.event-hero {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-lg);
+    background: linear-gradient(135deg, var(--c-marine) 0%, var(--c-mer) 100%);
+    min-height: 320px;
+    display: flex;
+    align-items: flex-end;
+}
+
+.event-hero__image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+}
+
+.event-hero__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(10, 61, 98, 0) 0%,
+        rgba(10, 61, 98, 0.15) 40%,
+        rgba(10, 61, 98, 0.85) 100%
+    );
+    z-index: 1;
+}
+
+.event-hero--no-image .event-hero__overlay {
+    background: linear-gradient(
+        135deg,
+        rgba(10, 61, 98, 0.85) 0%,
+        rgba(30, 96, 145, 0.75) 100%
+    );
+}
+
+.event-hero__content {
+    position: relative;
+    z-index: 2;
+    color: var(--c-blanc);
+    padding: var(--space-lg) var(--space-md);
+    width: 100%;
+}
+
+.event-hero__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.event-hero__category {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--c-corail);
+    color: var(--c-blanc);
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    box-shadow: 0 4px 12px rgba(224, 120, 86, 0.4);
+}
+
+.event-hero__date {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.event-hero__title {
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    line-height: 1.15;
+    margin: 0 0 var(--space-sm) 0;
+    color: var(--c-blanc);
+    text-shadow: 0 2px 12px rgba(10, 61, 98, 0.45);
+    letter-spacing: -0.01em;
+}
+
+.event-hero__address {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.92);
+    margin: 0;
+}
+
+.event-hero__address .icon-pin {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+/* ---------- Grille 2 colonnes ---------- */
+
+.event-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: var(--space-lg);
+    align-items: start;
+}
+
+.event-main {
+    min-width: 0;
+}
+
+.event-sidebar {
+    position: sticky;
+    top: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+@media (max-width: 900px) {
+    .event-grid {
+        grid-template-columns: 1fr;
+    }
+    .event-sidebar {
+        position: static;
+    }
+}
+
+/* ---------- Cartes blanches (description, sidebar, carte) ---------- */
+
+.event-card-panel {
+    background-color: var(--c-blanc);
+    border: 1px solid var(--c-bordure);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xs);
+    padding: var(--space-md);
+}
+
+.event-card-panel--flush {
+    padding: 0;
+    overflow: hidden;
+}
+
+.event-panel__title {
+    font-size: 1.15rem;
+    color: var(--c-marine);
+    margin: 0 0 var(--space-sm) 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.event-panel__title::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 18px;
+    background-color: var(--c-corail);
+    border-radius: 2px;
+}
+
+/* ---------- Description ---------- */
+
+.event-description {
+    color: var(--c-texte);
+    font-size: 1.02rem;
+    line-height: 1.7;
+    white-space: pre-line;
+}
+
+.event-description p { margin: 0 0 var(--space-sm) 0; }
+.event-description p:last-child { margin-bottom: 0; }
+
+.event-cover {
+    margin-top: var(--space-md);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.event-cover img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* ---------- Sidebar : infos pratiques (design « event ticket ») ---------- */
+
+.event-info-panel {
+    padding: var(--space-md);
+}
+
+/* === Tuile date hero (icône calendrier iOS) === */
+
+.event-info-date {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.25rem 0 1rem 0;
+    border-bottom: 1px dashed var(--c-bordure);
+    margin-bottom: 0.75rem;
+}
+
+.event-date-tile {
+    flex-shrink: 0;
+    width: 56px;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: var(--c-blanc);
+    border: 1px solid var(--c-bordure);
+    box-shadow: 0 2px 8px rgba(10, 61, 98, 0.08);
+    text-align: center;
+    line-height: 1;
+    font-style: normal;
+}
+
+.event-date-tile__month {
+    display: block;
+    background: linear-gradient(135deg, var(--c-corail) 0%, var(--c-corail-fonce) 100%);
+    color: var(--c-blanc);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 0.3rem 0;
+}
+
+.event-date-tile__day {
+    display: block;
+    color: var(--c-marine);
+    font-size: 1.6rem;
+    font-weight: 700;
+    padding: 0.45rem 0 0.55rem 0;
+    letter-spacing: -0.02em;
+}
+
+.event-info-date__details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+.event-info-date__main {
+    font-size: 1rem;
+    color: var(--c-marine);
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.event-info-date__time {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--c-texte-doux);
+    font-weight: 500;
+}
+
+.event-info-date__time svg {
+    color: var(--c-mer-clair);
+    flex-shrink: 0;
+}
+
+/* === Liste mini-cards === */
+
+.event-info-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.event-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--c-sable-clair);
+    transition: background-color 200ms ease;
+    min-width: 0;
+}
+
+.event-info-item:hover {
+    background-color: var(--c-sable);
+}
+
+.event-info-item__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--c-blanc);
+    border: 1px solid var(--c-bordure);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-mer);
+    flex-shrink: 0;
+}
+
+.event-info-item__icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.event-info-item__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+    gap: 0.15rem;
+}
+
+.event-info-item__label {
+    font-size: 0.7rem;
+    color: var(--c-texte-doux);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.event-info-item__value {
+    color: var(--c-marine);
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.event-info-item__sub {
+    color: var(--c-texte-doux);
+    font-size: 0.85rem;
+    font-weight: 400;
+}
+
+.event-info-item__price {
+    color: var(--c-corail-fonce);
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+}
+
+.event-info-item__chip {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--c-marine) 0%, var(--c-mer) 100%);
+    color: var(--c-blanc);
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    align-self: flex-start;
+}
+
+/* ---------- Organisateur ---------- */
+
+.event-organizer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.event-organizer__name {
+    font-weight: 600;
+    color: var(--c-marine);
+    font-size: 1.05rem;
+}
+
+.event-organizer__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background: linear-gradient(135deg, var(--c-corail) 0%, var(--c-corail-fonce) 100%);
+    color: var(--c-blanc);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 0.7rem 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: transform var(--duration-base, 200ms) var(--ease-out, ease-out),
+                box-shadow var(--duration-base, 200ms) var(--ease-out, ease-out);
+    box-shadow: 0 4px 12px rgba(224, 120, 86, 0.3);
+}
+
+.event-organizer__cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(224, 120, 86, 0.4);
+    color: var(--c-blanc);
+}
+
+/* ---------- Actions calendrier (.ics / Google Calendar) ---------- */
+
+.event-calendar-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px dashed var(--c-bordure);
+}
+
+.event-calendar-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    border: 1px solid var(--c-bordure);
+    background-color: var(--c-blanc);
+    color: var(--c-marine);
+    transition: transform var(--duration-base, 200ms) var(--ease-out, ease-out),
+                box-shadow var(--duration-base, 200ms) var(--ease-out, ease-out),
+                border-color var(--duration-base, 200ms) var(--ease-out, ease-out);
+}
+
+.event-calendar-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(20, 40, 70, 0.08);
+    border-color: var(--c-mer);
+    color: var(--c-marine);
+}
+
+.event-calendar-btn__icon {
+    font-size: 1.4rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.event-calendar-btn__body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.event-calendar-btn__label {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.event-calendar-btn__sub {
+    font-size: 0.8rem;
+    color: var(--c-texte-doux);
+}
+
+.event-calendar-btn--gcal {
+    background: linear-gradient(135deg, var(--c-marine) 0%, var(--c-mer) 100%);
+    border-color: transparent;
+    color: var(--c-blanc);
+}
+
+.event-calendar-btn--gcal:hover {
+    color: var(--c-blanc);
+    box-shadow: 0 8px 20px rgba(20, 40, 70, 0.25);
+}
+
+.event-calendar-btn--gcal .event-calendar-btn__sub {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+/* ---------- Carte ---------- */
+
+.event-map-panel { padding: 0; overflow: hidden; }
+
+.event-map-panel__header {
+    padding: var(--space-md) var(--space-md) var(--space-sm) var(--space-md);
+}
+
+.event-map {
+    width: 100%;
+    height: 260px;
+    background-color: var(--c-sable-clair);
+    position: relative;
+}
+
+.event-map .leaflet-container {
+    width: 100%;
+    height: 100%;
+    font-family: var(--font-base);
+}
+
+.event-map__fallback {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 0.5rem;
+    color: var(--c-texte-doux);
+    background: repeating-linear-gradient(
+        45deg,
+        var(--c-sable-clair),
+        var(--c-sable-clair) 12px,
+        #f0e3c4 12px,
+        #f0e3c4 24px
+    );
+}
+
+.event-map__directions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: var(--c-marine);
+    color: var(--c-blanc);
+    text-decoration: none;
+    padding: 0.85rem var(--space-md);
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: background-color var(--duration-base, 200ms) var(--ease-out, ease-out);
+}
+
+.event-map__directions:hover {
+    background-color: var(--c-mer);
+    color: var(--c-blanc);
+}
+
+.event-map__directions svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* ---------- Personnalisation marqueur Leaflet (couleur corail) ---------- */
+
+.event-map-marker {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    background: radial-gradient(circle at 35% 35%, var(--c-corail) 0%, var(--c-corail-fonce) 100%);
+    border: 3px solid var(--c-blanc);
+    border-radius: 50%;
+    box-shadow: 0 6px 16px rgba(10, 61, 98, 0.35);
+}
+
+.event-map-marker::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    background-color: var(--c-blanc);
+    border-radius: 50%;
+}
+
+/* Pulse subtil autour du marqueur pour attirer l’œil */
+.event-map-marker::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background-color: rgba(224, 120, 86, 0.35);
+    animation: event-map-pulse 2s ease-out infinite;
+    z-index: -1;
+}
+
+@keyframes event-map-pulse {
+    0%   { transform: scale(0.6); opacity: 0.9; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* ---------- Footer espacement ---------- */
+
+.event-detail + .site-footer {
+    margin-top: 0;
+}
+
+/* ---------- Flash messages (page détail) ---------- */
+
+.event-flash {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-md);
+    font-size: 0.95rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+}
+
+.event-flash--success {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+.event-flash--info {
+    background-color: rgba(74, 144, 184, 0.08);
+    color: var(--c-marine);
+    border-color: rgba(74, 144, 184, 0.25);
+}
+
+.event-flash--warning,
+.event-flash--error {
+    background-color: #fff7ed;
+    color: #9a3412;
+    border-color: #fed7aa;
+}
+
+/* ---------- Partage social ---------- */
+
+.event-share-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.event-share {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.event-share__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.9rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--c-bordure);
+    background-color: var(--c-blanc);
+    color: var(--c-marine);
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform var(--duration-base, 200ms) var(--ease-out, ease-out),
+                box-shadow var(--duration-base, 200ms) var(--ease-out, ease-out),
+                border-color var(--duration-base, 200ms) var(--ease-out, ease-out),
+                background-color var(--duration-base, 200ms) var(--ease-out, ease-out),
+                color var(--duration-base, 200ms) var(--ease-out, ease-out);
+}
+
+.event-share__btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(20, 40, 70, 0.10);
+}
+
+.event-share__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.event-share__btn--facebook:hover {
+    background-color: #1877f2;
+    border-color: #1877f2;
+    color: var(--c-blanc);
+}
+
+.event-share__btn--twitter:hover {
+    background-color: #000;
+    border-color: #000;
+    color: var(--c-blanc);
+}
+
+.event-share__btn--whatsapp:hover {
+    background-color: #25d366;
+    border-color: #25d366;
+    color: var(--c-blanc);
+}
+
+.event-share__btn--copy {
+    background-color: var(--c-sable-clair);
+}
+
+.event-share__btn--copy:hover {
+    background-color: var(--c-blanc);
+    border-color: var(--c-mer);
+    color: var(--c-marine);
+}
+
+.event-share__btn--copy.is-copied {
+    background-color: #ecfdf5;
+    border-color: #34d399;
+    color: #065f46;
+    transform: none;
+}
+
+.event-share__btn--copy.is-copied .event-share__icon {
+    color: #059669;
+}
+
+/* ---------- Signalement ---------- */
+
+.event-signaler-form {
+    margin: 0;
+    padding-top: var(--space-sm);
+    border-top: 1px dashed var(--c-bordure);
+}
+
+.event-signaler-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.2rem;
+    background: transparent;
+    border: none;
+    color: var(--c-texte-doux);
+    font: inherit;
+    font-size: 0.88rem;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: rgba(90, 107, 122, 0.4);
+    text-underline-offset: 3px;
+    transition: color var(--duration-base, 200ms) var(--ease-out, ease-out);
+}
+
+.event-signaler-btn:hover {
+    color: var(--c-corail-fonce);
+    text-decoration-color: currentColor;
+}
+
+.event-signaler-btn__icon {
+    font-size: 1rem;
+    line-height: 1;
+}

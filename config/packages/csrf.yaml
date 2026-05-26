@@ -1,0 +1,17 @@
+# csrf.yaml
+#
+# QUOI : Active la protection CSRF côté formulaires et composants Framework en mode stateful classique.
+#
+# COMMENT : Sous-clés `form` / `csrf_protection` cohérentes avec `framework.yaml` ; `stateless_token_ids: []` conserve le mode par cookie/session plutôt que jetons d’API stateless.
+#
+# OÙ : Imports du FrameworkBundle dans `config/packages/`.
+#
+# POURQUOI : Sécuriser les POST contre le forgery tout en restant compatible avec un rendu HTML côté serveur.
+
+framework:
+    form:
+        csrf_protection:
+            enabled: true
+    csrf_protection:
+        enabled: true
+        stateless_token_ids: []

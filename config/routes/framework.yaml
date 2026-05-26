@@ -1,0 +1,14 @@
+# framework.yaml (routes)
+#
+# QUOI : Expose les routes de pages d’erreur détaillées du Framework en environnement de développement uniquement.
+#
+# COMMENT : Importe `routing/errors.php` du FrameworkBundle sous le préfixe `/_error` lorsque `APP_ENV=dev`.
+#
+# OÙ : Couche routing, complément des routes applicatives.
+#
+# POURQUOI : Afficher des pages d’erreur exploitables pendant le debug sans les exposer en prod.
+
+when@dev:
+    _errors:
+        resource: '@FrameworkBundle/Resources/config/routing/errors.php'
+        prefix: /_error

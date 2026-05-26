@@ -1,0 +1,81 @@
+{#
+admin/dashboard.html.twig
+
+QUOI : Tableau de bord modération : compteurs par statut, raccourcis vers listes, derniers événements en attente.
+
+COMMENT : Statistiques `stats` et `recentPending` ; cartes cliquables vers filtres ; inclusion `_event_card` en mode `pending`.
+
+OÙ : Route tableau de bord admin.
+
+POURQUOI : Vue synthétique pour traiter la file d’attente.
+#}
+{% extends 'admin/_base.html.twig' %}
+
+{% block title %}Tableau de bord{% endblock %}
+
+{% block body %}
+    <header class="admin-page-header">
+        <h1>Tableau de bord</h1>
+        <p class="admin-page-subtitle">Aperçu de la modération.</p>
+    </header>
+
+    {# Compteurs cliquables : attente, approuvés, refusés, corbeille #}
+    <section class="stats-grid">
+        <a href="{{ path('app_admin_events', {status: 'pending'}) }}" class="stat-card stat-card--accent">
+            <span class="stat-card__icon" aria-hidden="true">📥</span>
+            <span class="stat-card__value">{{ stats.pending }}</span>
+            <span class="stat-card__label">En attente</span>
+        </a>
+        <a href="{{ path('app_admin_events', {status: 'approved'}) }}" class="stat-card stat-card--success">
+            <span class="stat-card__icon" aria-hidden="true">✓</span>
+            <span class="stat-card__value">{{ stats.approved }}</span>
+            <span class="stat-card__label">Approuvés</span>
+        </a>
+        <a href="{{ path('app_admin_events', {status: 'rejected'}) }}" class="stat-card stat-card--danger">
+            <span class="stat-card__icon" aria-hidden="true">✗</span>
+            <span class="stat-card__value">{{ stats.rejected }}</span>
+            <span class="stat-card__label">Refusés</span>
+        </a>
+        <a href="{{ path('app_admin_trash') }}" class="stat-card stat-card--trash">
+            <span class="stat-card__icon" aria-hidden="true">🗑️</span>
+            <span class="stat-card__value">{{ stats.trashed }}</span>
+            <span class="stat-card__label">Corbeille</span>
+        </a>
+    </section>
+
+    {# KPIs secondaires : volumétrie récente #}
+    <section class="kpi-row" aria-label="Activité récente">
+        <div class="kpi-card">
+            <span class="kpi-card__label">Soumis cette semaine</span>
+            <span class="kpi-card__value">{{ stats.submittedWeek }}</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-card__label">Soumis ce mois</span>
+            <span class="kpi-card__value">{{ stats.submittedMonth }}</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-card__label">Total publié</span>
+            <span class="kpi-card__value">{{ stats.approved }}</span>
+        </div>
+    </section>
+
+    {# Aperçu file d’attente ou message « tout est à jour » #}
+    {% if recentPending|length > 0 %}
+        <section class="admin-section">
+            <div class="admin-section__header">
+                <h2>Derniers événements à modérer</h2>
+                <a href="{{ path('app_admin_events', {status: 'pending'}) }}" class="admin-section__link">Voir tous →</a>
+            </div>
+
+            <div class="admin-event-list">
+                {% for event in recentPending %}
+                    {% include 'admin/_event_card.html.twig' with {event: event, mode: 'pending'} %}
+                {% endfor %}
+            </div>
+        </section>
+    {% else %}
+        <div class="admin-empty">
+            <p>🎉 Pas d'événement en attente. Tout est à jour&nbsp;!</p>
+        </div>
+    {% endif %}
+{% endblock %}

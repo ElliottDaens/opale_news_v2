@@ -1,0 +1,57 @@
+# .dockerignore
+#
+# QUOI : Exclusions du contexte `docker build` (étape `COPY . .` du stage prod).
+#
+# COMMENT : Ignore caches, secrets, compose, scripts hôte ; conserve `docker/php` et `docker/cron`.
+#
+# OÙ : Racine du projet, lu automatiquement par Docker.
+#
+# POURQUOI : Builds rapides, image légère, aucun secret embarqué.
+
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+.claude
+
+# Dépendances reconstruites dans le conteneur.
+node_modules
+vendor
+
+# Caches et logs locaux.
+var/cache
+var/log
+var/share
+.phpunit.result.cache
+
+# Uploads (volume persistant en prod).
+public/uploads
+
+# Outils dev / hors-production.
+tools
+tests
+
+# Secrets et envs locaux : NE JAMAIS embarquer.
+.env.local
+.env.local.php
+.env.*.local
+.env.prod
+secrets
+
+# Fichiers Docker / compose hors-image.
+# NB : docker/ est conservé dans le contexte car le Dockerfile copie docker/php/*.ini
+#      et le Dockerfile cron copie docker/cron/crontab.
+.dockerignore
+compose*.yaml
+compose.override.yaml
+
+# Scripts hôte (deploy/backup) — pas dans l'image.
+scripts/
+
+# Doc & artefacts.
+*.log
+*.md
+DEPLOY.md
+README.md
+LICENSE

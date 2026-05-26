@@ -1,0 +1,591 @@
+{#
+home/show.html.twig
+
+QUOI : Page publique de détail d’un événement (hero, description, infos pratiques, carte Leaflet, contact organisateur) avec balisage SEO complet (OpenGraph + JSON-LD Schema.org/Event).
+
+COMMENT : Étend `base.html.twig` via blocks `title`, `meta`, `opengraph`, `stylesheets`, `body`, `jsonld`. Construit l’URL canonique, combine `startDate` + `startTime` en ISO 8601, et expose les offres en EUR. Carte OpenStreetMap via Leaflet (sans clé API, sans bandeau de consentement).
+
+OÙ : Route `app_event_show` (`HomeController::show`).
+
+POURQUOI : Référencement Google Events, partages riches Facebook/X/LinkedIn, fiche complète visuelle pour le visiteur, localisation sur carte.
+#}
+{% extends 'base.html.twig' %}
+
+{# ---------- Macro : URL de pré-remplissage Google Calendar ----------
+   QUOI : Construit l’URL `https://www.google.com/calendar/render?action=TEMPLATE&…` à partir d’un Event.
+   COMMENT : Recombine date+heure côté entité (`startDateTime`/`endDateTime` en Europe/Paris), reformate en UTC
+   au format ICS (`YYYYMMDDTHHMMSSZ`) attendu par Google, URL-encode les champs texte. #}
+{% macro gcal_url(event) %}
+{%- set startUtc = event.startDateTime|date('Ymd\\THis\\Z', 'UTC') -%}
+{%- set endUtc = event.endDateTime|date('Ymd\\THis\\Z', 'UTC') -%}
+{%- set address = event.adresse ~ ', ' ~ event.codePostal ~ ' ' ~ event.ville -%}
+{%- set details = event.description|striptags|trim -%}
+{{- 'https://www.google.com/calendar/render?action=TEMPLATE'
+    ~ '&text=' ~ event.titre|url_encode
+    ~ '&dates=' ~ startUtc ~ '/' ~ endUtc
+    ~ '&details=' ~ details|url_encode
+    ~ '&location=' ~ address|url_encode -}}
+{% endmacro %}
+{% import _self as cal %}
+
+{# ---------- Données dérivées (URLs, ISO 8601, prix, images) ---------- #}
+{% set canonicalPath = path('app_event_show', { id: event.id, slug: event.slug }) %}
+{% set canonicalUrl = app.request.schemeAndHttpHost ~ canonicalPath %}
+
+{% set descriptionText = event.description|striptags|trim %}
+{% set descriptionShort = descriptionText|length > 200 ? descriptionText|slice(0, 197) ~ '…' : descriptionText %}
+
+{% set coverImage = event.imageCouverture ? app.request.schemeAndHttpHost ~ asset(event.imageCouverture) : null %}
+{% set bannerImage = event.imageBanniere ? app.request.schemeAndHttpHost ~ asset(event.imageBanniere) : null %}
+{% set ogImage = bannerImage ?? coverImage %}
+{% set heroImage = bannerImage ?? coverImage %}
+
+{% set startIso = event.startTime
+    ? event.startDate.format('Y-m-d') ~ 'T' ~ event.startTime.format('H:i:s')
+    : event.startDate.format('Y-m-d') %}
+{% set endDateOnly = event.endDate ?? event.startDate %}
+{% set endIso = event.endTime
+    ? endDateOnly.format('Y-m-d') ~ 'T' ~ event.endTime.format('H:i:s')
+    : (event.endDate ? endDateOnly.format('Y-m-d') : null) %}
+
+{% set priceNumber = event.priceNumeric %}
+
+{# ---------- Adresse encodée pour les itinéraires Google Maps ---------- #}
+{% set fullAddress = event.adresse ~ ', ' ~ event.codePostal ~ ' ' ~ event.ville %}
+{% set directionsUrl = 'https://www.google.com/maps/dir/?api=1&destination=' ~ fullAddress|url_encode %}
+
+{# ---------- URLs natives de partage (sans dépendance JS) ---------- #}
+{% set shareText = event.titre %}
+{% set shareFacebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=' ~ canonicalUrl|url_encode %}
+{% set shareTwitterUrl = 'https://twitter.com/intent/tweet?url=' ~ canonicalUrl|url_encode ~ '&text=' ~ shareText|url_encode %}
+{% set shareWhatsappUrl = 'https://wa.me/?text=' ~ (shareText ~ "\n" ~ canonicalUrl)|url_encode %}
+
+{% block title %}{{ event.titre }} — {{ event.ville }} | Opale News{% endblock %}
+
+{% block meta %}
+    <meta name="description" content="{{ descriptionShort }}">
+    <link rel="canonical" href="{{ canonicalUrl }}">
+{% endblock %}
+
+{% block opengraph %}
+    <meta property="og:type" content="event">
+    <meta property="og:site_name" content="Opale News">
+    <meta property="og:locale" content="fr_FR">
+    <meta property="og:title" content="{{ event.titre }}">
+    <meta property="og:description" content="{{ descriptionShort }}">
+    <meta property="og:url" content="{{ canonicalUrl }}">
+    {% if ogImage %}
+        <meta property="og:image" content="{{ ogImage }}">
+        <meta property="og:image:alt" content="{{ event.titre }}">
+    {% endif %}
+
+    <meta name="twitter:card" content="{{ ogImage ? 'summary_large_image' : 'summary' }}">
+    <meta name="twitter:title" content="{{ event.titre }}">
+    <meta name="twitter:description" content="{{ descriptionShort }}">
+    {% if ogImage %}
+        <meta name="twitter:image" content="{{ ogImage }}">
+    {% endif %}
+{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/event-detail.css') }}?v=cal1">
+    {% if event.hasCoordinates %}
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+    {# ---------- En-tête site ---------- #}
+    <header class="site-header">
+        <div class="container">
+            <a href="{{ path('app_home') }}" class="logo">
+                <span class="logo-mark" aria-hidden="true">◐</span>
+                <span class="logo-text">Opale News</span>
+            </a>
+            <p class="tagline">L'agenda local de la Côte d'Opale</p>
+            <a href="{{ path('app_event_submit') }}" class="header-cta">
+                <span aria-hidden="true">+</span> Proposer un événement
+            </a>
+        </div>
+    </header>
+
+    <main class="container event-detail">
+        <a href="{{ path('app_home') }}" class="event-detail__back">← Retour à l'agenda</a>
+
+        {% for label, messages in app.flashes(['success', 'info', 'warning', 'error']) %}
+            {% for message in messages %}
+                <div class="event-flash event-flash--{{ label }}" role="status">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {% if event.status.value != 'approved' %}
+            <div class="event-detail__warning">
+                Cet événement est en statut « {{ event.status.label }} ». Il n'est pas encore visible publiquement.
+            </div>
+        {% endif %}
+
+        {# ---------- HERO : image + overlay + titre ---------- #}
+        <section class="event-hero {{ heroImage ? '' : 'event-hero--no-image' }}">
+            {% if heroImage %}
+                <img class="event-hero__image" src="{{ asset(bannerImage ? event.imageBanniere : event.imageCouverture) }}" alt="{{ event.titre }}" loading="eager">
+            {% endif %}
+            <div class="event-hero__overlay" aria-hidden="true"></div>
+            <div class="event-hero__content">
+                <div class="event-hero__meta">
+                    <span class="event-hero__category">{{ event.categorie }}</span>
+                    <span class="event-hero__date">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        {{ event.formatDateRange }}
+                    </span>
+                </div>
+                <h1 class="event-hero__title">{{ event.titre }}</h1>
+                <p class="event-hero__address">
+                    <svg class="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 22s-8-7.58-8-13a8 8 0 0 1 16 0c0 5.42-8 13-8 13z"/>
+                        <circle cx="12" cy="9" r="3"/>
+                    </svg>
+                    <span>{{ event.adresse }} — {{ event.codePostal }} {{ event.ville }}</span>
+                </p>
+            </div>
+        </section>
+
+        {# ---------- Grille 2 colonnes ---------- #}
+        <div class="event-grid">
+
+            {# ===== Colonne principale ===== #}
+            <article class="event-main">
+                <section class="event-card-panel">
+                    <h2 class="event-panel__title">À propos de l'événement</h2>
+                    <div class="event-description">{{ event.description|nl2br }}</div>
+
+                    {% if coverImage and bannerImage %}
+                        <figure class="event-cover">
+                            <img src="{{ asset(event.imageCouverture) }}" alt="{{ event.titre }}" loading="lazy">
+                        </figure>
+                    {% endif %}
+                </section>
+
+                {# Partage social : liens natifs (aucun script tiers) + bouton « Copier le lien » #}
+                <section class="event-card-panel event-share-panel" aria-label="Partager cet événement">
+                    <h2 class="event-panel__title">Partager</h2>
+                    <div class="event-share">
+                        <a class="event-share__btn event-share__btn--facebook"
+                           href="{{ shareFacebookUrl }}"
+                           target="_blank" rel="noopener noreferrer"
+                           aria-label="Partager sur Facebook">
+                            <span class="event-share__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                                    <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.51 1.49-3.9 3.78-3.9 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99A10 10 0 0 0 22 12z"/>
+                                </svg>
+                            </span>
+                            <span class="event-share__label">Facebook</span>
+                        </a>
+                        <a class="event-share__btn event-share__btn--twitter"
+                           href="{{ shareTwitterUrl }}"
+                           target="_blank" rel="noopener noreferrer"
+                           aria-label="Partager sur X (anciennement Twitter)">
+                            <span class="event-share__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z"/>
+                                </svg>
+                            </span>
+                            <span class="event-share__label">X</span>
+                        </a>
+                        <a class="event-share__btn event-share__btn--whatsapp"
+                           href="{{ shareWhatsappUrl }}"
+                           target="_blank" rel="noopener noreferrer"
+                           aria-label="Partager sur WhatsApp">
+                            <span class="event-share__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                                    <path d="M20.52 3.48A11.95 11.95 0 0 0 12.06 0C5.5 0 .17 5.34.17 11.91c0 2.1.55 4.15 1.6 5.96L0 24l6.31-1.66a11.9 11.9 0 0 0 5.75 1.46h.01c6.56 0 11.9-5.34 11.9-11.91 0-3.18-1.24-6.16-3.45-8.41zM12.06 21.8h-.01a9.92 9.92 0 0 1-5.05-1.38l-.36-.21-3.74.98 1-3.65-.24-.37a9.92 9.92 0 0 1-1.52-5.27c0-5.47 4.45-9.92 9.93-9.92 2.65 0 5.15 1.03 7.02 2.9a9.86 9.86 0 0 1 2.91 7.02c0 5.48-4.45 9.92-9.94 9.92zm5.45-7.43c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.66.15-.2.3-.76.97-.93 1.17-.17.2-.34.22-.64.07-.3-.15-1.26-.46-2.4-1.48-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.34.45-.51.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.66-1.6-.9-2.18-.24-.57-.48-.5-.66-.51l-.57-.01c-.2 0-.5.07-.77.37-.27.3-1.02 1-1.02 2.44 0 1.44 1.05 2.83 1.2 3.03.15.2 2.07 3.17 5.02 4.45.7.3 1.25.48 1.68.62.7.22 1.34.19 1.85.12.56-.08 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35z"/>
+                                </svg>
+                            </span>
+                            <span class="event-share__label">WhatsApp</span>
+                        </a>
+                        <button type="button"
+                                class="event-share__btn event-share__btn--copy"
+                                id="event-share-copy"
+                                data-url="{{ canonicalUrl }}"
+                                data-default-label="Copier le lien"
+                                data-success-label="Lien copié !"
+                                aria-label="Copier le lien de l'événement">
+                            <span class="event-share__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                </svg>
+                            </span>
+                            <span class="event-share__label" data-role="label">Copier le lien</span>
+                        </button>
+                    </div>
+
+                    {# Signalement : formulaire POST + CSRF, redirige vers la fiche avec flash de remerciement. #}
+                    <form action="{{ path('app_event_signaler', { id: event.id }) }}"
+                          method="post"
+                          class="event-signaler-form">
+                        <input type="hidden" name="_token" value="{{ csrf_token('signaler-event-' ~ event.id) }}">
+                        <button type="submit" class="event-signaler-btn"
+                                aria-label="Signaler une erreur ou une modification sur cet événement">
+                            <span class="event-signaler-btn__icon" aria-hidden="true">⚠️</span>
+                            Signaler une erreur ou une modification
+                        </button>
+                    </form>
+                </section>
+            </article>
+
+            {# ===== Sidebar ===== #}
+            <aside class="event-sidebar">
+
+                {# Infos pratiques — design « event ticket » : tuile date hero + lignes mini-cards #}
+                {% set addressContainsCity = event.codePostal in event.adresse or event.ville|lower in event.adresse|lower %}
+
+                <section class="event-card-panel event-info-panel">
+                    <h2 class="event-panel__title">Infos pratiques</h2>
+
+                    {# Tuile date (style icône calendrier iOS) + détails #}
+                    <div class="event-info-date">
+                        <time class="event-date-tile" datetime="{{ event.startDate.format('Y-m-d') }}">
+                            <span class="event-date-tile__month">{{ event.monthShortLabelFr }}</span>
+                            <span class="event-date-tile__day">{{ event.dayLabel }}</span>
+                        </time>
+                        <div class="event-info-date__details">
+                            <strong class="event-info-date__main">
+                                {% if event.endDate and event.endDate.format('Y-m-d') != event.startDate.format('Y-m-d') %}
+                                    {{ event.formatDateRange }}
+                                {% else %}
+                                    {{ event.weekdayLabelFr }} {{ event.startDate.format('j') }} {{ event.monthShortLabelFr|lower }}
+                                {% endif %}
+                            </strong>
+                            {% if event.startTime %}
+                                <span class="event-info-date__time">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <polyline points="12 6 12 12 16 14"/>
+                                    </svg>
+                                    {{ event.startTime.format('H\\hi') }}{% if event.endTime %} → {{ event.endTime.format('H\\hi') }}{% endif %}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {# Mini-cards : lieu / tarif / catégorie #}
+                    <ul class="event-info-list">
+                        <li class="event-info-item">
+                            <span class="event-info-item__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 22s-8-7.58-8-13a8 8 0 0 1 16 0c0 5.42-8 13-8 13z"/>
+                                    <circle cx="12" cy="9" r="3"/>
+                                </svg>
+                            </span>
+                            <div class="event-info-item__body">
+                                <span class="event-info-item__label">Lieu</span>
+                                <span class="event-info-item__value">{{ event.adresse }}</span>
+                                {% if not addressContainsCity %}
+                                    <span class="event-info-item__sub">{{ event.codePostal }} {{ event.ville }}</span>
+                                {% endif %}
+                            </div>
+                        </li>
+
+                        <li class="event-info-item">
+                            <span class="event-info-item__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="1" x2="12" y2="23"/>
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                </svg>
+                            </span>
+                            <div class="event-info-item__body">
+                                <span class="event-info-item__label">Tarif</span>
+                                <span class="event-info-item__price">{{ event.prixDisplay }}</span>
+                            </div>
+                        </li>
+
+                        <li class="event-info-item">
+                            <span class="event-info-item__icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                </svg>
+                            </span>
+                            <div class="event-info-item__body">
+                                <span class="event-info-item__label">Catégorie</span>
+                                <span class="event-info-item__chip">{{ event.categorie }}</span>
+                            </div>
+                        </li>
+                    </ul>
+
+                    {# Actions calendrier : export universel .ics + redirection Google Calendar #}
+                    <div class="event-calendar-actions">
+                        <a class="event-calendar-btn event-calendar-btn--ics"
+                           href="{{ path('app_event_ics', { id: event.id }) }}"
+                           download="evenement-{{ event.id }}.ics">
+                            <span class="event-calendar-btn__icon" aria-hidden="true">📅</span>
+                            <span class="event-calendar-btn__body">
+                                <span class="event-calendar-btn__label">Ajouter à mon agenda</span>
+                                <span class="event-calendar-btn__sub">Téléchargement .ics</span>
+                            </span>
+                        </a>
+                        <a class="event-calendar-btn event-calendar-btn--gcal"
+                           href="{{ cal.gcal_url(event) }}"
+                           target="_blank" rel="noopener noreferrer">
+                            <span class="event-calendar-btn__icon" aria-hidden="true">🤖</span>
+                            <span class="event-calendar-btn__body">
+                                <span class="event-calendar-btn__label">Ajouter à Google Calendar</span>
+                                <span class="event-calendar-btn__sub">Ouvre une nouvelle fenêtre</span>
+                            </span>
+                        </a>
+                    </div>
+                </section>
+
+                {# Organisateur #}
+                <section class="event-card-panel">
+                    <h2 class="event-panel__title">Organisateur</h2>
+                    <div class="event-organizer">
+                        <div class="event-organizer__name">{{ event.nomOrganisateur }}</div>
+                        <a class="event-organizer__cta" href="mailto:{{ event.emailContact }}?subject={{ ('Information sur ' ~ event.titre)|url_encode }}">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                            Contacter
+                        </a>
+                    </div>
+                </section>
+
+                {# Carte ---------- #}
+                <section class="event-card-panel event-card-panel--flush event-map-panel" aria-label="Carte du lieu">
+                    <div class="event-map-panel__header">
+                        <h2 class="event-panel__title">Sur la carte</h2>
+                    </div>
+
+                    <div class="event-map" id="event-map"
+                         {% if event.hasCoordinates %}
+                            data-lat="{{ event.latitude }}"
+                            data-lng="{{ event.longitude }}"
+                            data-label="{{ event.titre|e('html_attr') }}"
+                         {% endif %}>
+                        {% if not event.hasCoordinates %}
+                            <div class="event-map__fallback">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 22s-8-7.58-8-13a8 8 0 0 1 16 0c0 5.42-8 13-8 13z"/>
+                                    <circle cx="12" cy="9" r="3"/>
+                                </svg>
+                                <span>Coordonnées non disponibles</span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <a class="event-map__directions" href="{{ directionsUrl }}" target="_blank" rel="noopener noreferrer">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+                        </svg>
+                        Itinéraire avec Google Maps
+                    </a>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+    {# ---------- Pied de page ---------- #}
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; {{ "now"|date('Y') }} Opale News — Pas-de-Calais</p>
+            <a href="{{ path('app_login') }}" class="footer-login">Connexion admin</a>
+        </div>
+    </footer>
+
+    {# ---------- Copie d'URL pour le bouton « Copier le lien » ---------- #}
+    <script>
+        (function () {
+            'use strict';
+            var btn = document.getElementById('event-share-copy');
+            if (!btn) { return; }
+            var labelEl = btn.querySelector('[data-role="label"]');
+            var defaultLabel = btn.dataset.defaultLabel || 'Copier le lien';
+            var successLabel = btn.dataset.successLabel || 'Lien copié !';
+            var resetTimer = null;
+
+            function showFeedback() {
+                btn.classList.add('is-copied');
+                if (labelEl) { labelEl.textContent = successLabel; }
+                if (resetTimer) { clearTimeout(resetTimer); }
+                resetTimer = setTimeout(function () {
+                    btn.classList.remove('is-copied');
+                    if (labelEl) { labelEl.textContent = defaultLabel; }
+                }, 2000);
+            }
+
+            function fallbackCopy(text) {
+                // execCommand pour les navigateurs sans Clipboard API (HTTP non sécurisé, anciens iOS).
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.setAttribute('readonly', '');
+                ta.style.position = 'absolute';
+                ta.style.left = '-9999px';
+                document.body.appendChild(ta);
+                ta.select();
+                try { document.execCommand('copy'); } catch (_) {}
+                document.body.removeChild(ta);
+            }
+
+            btn.addEventListener('click', function () {
+                var url = btn.dataset.url || window.location.href;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(url).then(showFeedback, function () {
+                        fallbackCopy(url);
+                        showFeedback();
+                    });
+                } else {
+                    fallbackCopy(url);
+                    showFeedback();
+                }
+            });
+        })();
+    </script>
+
+    {# ---------- Leaflet (uniquement si coordonnées) ---------- #}
+    {% if event.hasCoordinates %}
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+        <script>
+            (function () {
+                'use strict';
+
+                /*
+                init-event-map
+
+                QUOI : Initialise la carte Leaflet centrée sur l’événement, avec marqueur stylisé et tuiles CartoDB Voyager.
+
+                COMMENT : Lit lat/lng depuis l’attribut `data-` du conteneur, utilise un `L.divIcon` pour matcher la palette Opale, popup avec libellé. `invalidateSize` retarde le rendu après le layout pour éviter une carte grise.
+
+                POURQUOI : Localiser l’événement sans dépendre de Google Maps (pas de clé API, pas de bandeau de consentement).
+                */
+
+                function init() {
+                    var el = document.getElementById('event-map');
+                    if (!el) { return; }
+                    if (!window.L) {
+                        console.warn('[opale-news] Leaflet non chargé — carte indisponible.');
+                        return;
+                    }
+
+                    var lat = parseFloat(el.dataset.lat);
+                    var lng = parseFloat(el.dataset.lng);
+                    var label = el.dataset.label || '';
+                    if (isNaN(lat) || isNaN(lng)) {
+                        console.warn('[opale-news] Coordonnées invalides pour la carte', el.dataset);
+                        return;
+                    }
+
+                    try {
+                        var map = L.map(el, {
+                            center: [lat, lng],
+                            zoom: 15,
+                            scrollWheelZoom: false,
+                            zoomControl: true
+                        });
+
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                            subdomains: 'abcd',
+                            maxZoom: 19
+                        }).addTo(map);
+
+                        var icon = L.divIcon({
+                            className: 'event-map-marker-wrap',
+                            html: '<div class="event-map-marker" role="img" aria-label="Lieu de l\'événement"></div>',
+                            iconSize: [28, 28],
+                            iconAnchor: [14, 14],
+                            popupAnchor: [0, -16]
+                        });
+
+                        var marker = L.marker([lat, lng], { icon: icon }).addTo(map);
+                        if (label) {
+                            marker.bindPopup('<strong>' + label + '</strong>');
+                        }
+
+                        // Au cas où le conteneur n’avait pas encore ses dimensions au moment du init
+                        setTimeout(function () { map.invalidateSize(); }, 100);
+                    } catch (err) {
+                        console.error('[opale-news] Échec init carte Leaflet', err);
+                    }
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', init);
+                } else {
+                    init();
+                }
+            })();
+        </script>
+    {% endif %}
+{% endblock %}
+
+{% block jsonld %}
+    {# Schema.org/Event : balisage structuré pour Google Events et carrousels riches #}
+    {% set jsonld = {
+        '@context': 'https://schema.org',
+        '@type': 'Event',
+        'name': event.titre,
+        'description': descriptionText,
+        'url': canonicalUrl,
+        'startDate': startIso,
+        'eventStatus': 'https://schema.org/EventScheduled',
+        'eventAttendanceMode': 'https://schema.org/OfflineEventAttendanceMode',
+        'location': {
+            '@type': 'Place',
+            'name': event.adresse,
+            'address': {
+                '@type': 'PostalAddress',
+                'streetAddress': event.adresse,
+                'addressLocality': event.ville,
+                'postalCode': event.codePostal,
+                'addressCountry': 'FR'
+            }
+        },
+        'organizer': {
+            '@type': 'Organization',
+            'name': event.nomOrganisateur,
+            'email': event.emailContact
+        },
+        'offers': {
+            '@type': 'Offer',
+            'price': priceNumber,
+            'priceCurrency': 'EUR',
+            'availability': 'https://schema.org/InStock',
+            'url': canonicalUrl,
+            'validFrom': event.createdAt.format('c')
+        }
+    } %}
+
+    {% if endIso %}
+        {% set jsonld = jsonld|merge({ 'endDate': endIso }) %}
+    {% endif %}
+
+    {% if event.hasCoordinates %}
+        {% set jsonld = jsonld|merge({
+            'location': jsonld.location|merge({
+                'geo': {
+                    '@type': 'GeoCoordinates',
+                    'latitude': event.latitude,
+                    'longitude': event.longitude
+                }
+            })
+        }) %}
+    {% endif %}
+
+    {% set images = [] %}
+    {% if coverImage %}{% set images = images|merge([coverImage]) %}{% endif %}
+    {% if bannerImage %}{% set images = images|merge([bannerImage]) %}{% endif %}
+    {% if images|length > 0 %}
+        {% set jsonld = jsonld|merge({ 'image': images }) %}
+    {% endif %}
+
+    <script type="application/ld+json">
+{{ jsonld|json_encode|raw }}
+    </script>
+{% endblock %}

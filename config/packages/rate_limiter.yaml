@@ -1,0 +1,21 @@
+# rate_limiter.yaml
+#
+# QUOI : Définit des limiteurs nommés pour les soumissions publiques et les actions IA, par adresse IP.
+#
+# COMMENT : `event_submission` utilise une fenêtre fixe (5/heure) ; `ai_action` une fenêtre glissante (20/5 min) ; tout repose sur le composant RateLimiter du Framework.
+#
+# OÙ : Services `limiter.*` injectables dans les contrôleurs / services pour prévenir les abus.
+#
+# POURQUOI : Protéger les formulaires ouverts et les endpoints coûteux en inférence sans dépendre d’une couche réseau externe.
+
+framework:
+    rate_limiter:
+        event_submission:
+            policy: 'fixed_window'
+            limit: 5
+            interval: '1 hour'
+
+        ai_action:
+            policy: 'sliding_window'
+            limit: 20
+            interval: '5 minutes'

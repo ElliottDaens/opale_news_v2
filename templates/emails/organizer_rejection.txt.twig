@@ -1,0 +1,31 @@
+{#
+emails/organizer_rejection.txt.twig
+
+QUOI : Notification texte — refus de la proposition.
+
+COMMENT : Motif `reason` repris en corps de message.
+
+OÙ : `NotificationService::sendOrganizerRejectionNotification`.
+
+POURQUOI : Version texte du mail de refus.
+#}
+Bonjour {{ event.nomOrganisateur }},
+
+Nous avons examiné avec attention votre proposition d'événement
+« {{ event.titre }} » prévue le {{ event.startDate|date('d/m/Y') }}
+à {{ event.ville }}.
+
+Après étude, nous ne pourrons malheureusement pas la publier en l'état
+sur Opale News.
+
+Motif :
+{{ reason }}
+
+Si vous pensez pouvoir lever ce point, n'hésitez pas à nous répondre
+directement à ce message : nous pourrons rouvrir le dossier après
+ajustements.
+
+Merci pour l'intérêt que vous portez à Opale News, et au plaisir de
+relayer un prochain événement.
+
+— L'équipe Opale News

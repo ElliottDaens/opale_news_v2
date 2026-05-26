@@ -1,0 +1,28 @@
+# web_profiler.yaml
+#
+# QUOI : Barre de debug et collecte du profiler HTTP en dev/test.
+#
+# COMMENT : Toolbar activée ; `excluded_ajax_paths` évite de profiler les assets ; collecte serializer en dev.
+#
+# OÙ : Profils `dev` et `test` ; routes WDT dans `config/routes/web_profiler.yaml`.
+#
+# POURQUOI : Diagnostiquer requêtes, temps SQL et appels HTTP sortants (Gemini, Pinecone).
+
+when@dev:
+    web_profiler:
+        toolbar: true
+        intercept_redirects: false # garder à false pour ne pas casser les flux JS POST → JSON
+        excluded_ajax_paths: '^/(_(profiler|wdt)|css|images|js)/'
+
+    framework:
+        profiler:
+            collect: true
+            collect_serializer_data: true
+        # Les requêtes HTTP sortantes (Gemini, Pinecone, …) apparaissent automatiquement
+        # dans l'onglet "HTTP Client" du toolbar de profiler.
+
+when@test:
+    framework:
+        profiler:
+            collect: false
+            collect_serializer_data: true

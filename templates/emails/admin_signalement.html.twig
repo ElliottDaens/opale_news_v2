@@ -1,0 +1,42 @@
+{#
+emails/admin_signalement.html.twig
+
+QUOI : Corps HTML — signalement d’erreur sur une fiche événement publique.
+
+COMMENT : Contexte `event`, `publicUrl`, `moderationUrl` ; liens absolus générés côté service.
+
+OÙ : `NotificationService::sendAdminSignalementAlert`.
+
+POURQUOI : Réaction rapide aux signalements visiteurs.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Signalement reçu</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #222;">
+    <h1>Signalement à vérifier</h1>
+
+    <p>Un visiteur vient de signaler une erreur ou une modification à apporter sur l'événement ci-dessous.</p>
+
+    <table cellpadding="6" cellspacing="0" border="0" style="border-collapse: collapse;">
+        <tr><td><strong>Titre</strong></td><td>{{ event.titre }}</td></tr>
+        <tr><td><strong>Ville</strong></td><td>{{ event.ville }}</td></tr>
+        <tr><td><strong>Date de début</strong></td><td>{{ event.startDate|date('d/m/Y') }}</td></tr>
+        <tr><td><strong>Catégorie</strong></td><td>{{ event.categorie }}</td></tr>
+        <tr><td><strong>Organisateur</strong></td><td>{{ event.nomOrganisateur }} ({{ event.emailContact }})</td></tr>
+    </table>
+
+    <p style="margin-top: 1.5rem;">
+        <a href="{{ moderationUrl }}"
+           style="display:inline-block; padding:10px 16px; background:#0a3d62; color:#fff; text-decoration:none; border-radius:6px; font-weight:600;">
+            Ouvrir la modération
+        </a>
+    </p>
+
+    <p style="font-size: 0.9rem; color: #555;">
+        Fiche publique : <a href="{{ publicUrl }}">{{ publicUrl }}</a>
+    </p>
+</body>
+</html>

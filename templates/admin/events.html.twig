@@ -1,0 +1,72 @@
+{#
+admin/events.html.twig
+
+QUOI : Liste filtrable des événements par statut de modération (en attente, approuvés, refusés).
+
+COMMENT : Onglets = changement de query `status` ; même liste rendue via `_event_card` et `mode` aligné sur le filtre actif.
+
+OÙ : Routes liste modération admin.
+
+POURQUOI : Traitement par file sans mélanger les statuts.
+#}
+{% extends 'admin/_base.html.twig' %}
+
+{% block title %}Modération{% endblock %}
+
+{% block body %}
+    {# Tabs + compteurs #}
+    <header class="admin-page-header">
+        <h1>Modération des événements</h1>
+
+        <div class="admin-tabs">
+            <a href="{{ path('app_admin_events', {status: 'pending', q: searchQuery ?: null}) }}"
+               class="admin-tab {{ currentStatus == 'pending' ? 'is-active' : '' }}">
+                En attente <span class="admin-tab__count">{{ counts.pending }}</span>
+            </a>
+            <a href="{{ path('app_admin_events', {status: 'approved', q: searchQuery ?: null}) }}"
+               class="admin-tab {{ currentStatus == 'approved' ? 'is-active' : '' }}">
+                Approuvés <span class="admin-tab__count">{{ counts.approved }}</span>
+            </a>
+            <a href="{{ path('app_admin_events', {status: 'rejected', q: searchQuery ?: null}) }}"
+               class="admin-tab {{ currentStatus == 'rejected' ? 'is-active' : '' }}">
+                Refusés <span class="admin-tab__count">{{ counts.rejected }}</span>
+            </a>
+            <a href="{{ path('app_admin_events', {status: 'all', q: searchQuery ?: null}) }}"
+               class="admin-tab {{ currentStatus == 'all' ? 'is-active' : '' }}">
+                Tous <span class="admin-tab__count">{{ counts.all }}</span>
+            </a>
+        </div>
+
+        {# Recherche serveur sur titre / ville / organisateur / description #}
+        <form method="get" action="{{ path('app_admin_events') }}" class="admin-search" role="search">
+            <input type="hidden" name="status" value="{{ currentStatus }}">
+            <svg class="admin-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="search" name="q" value="{{ searchQuery }}" placeholder="Rechercher par titre, ville, organisateur…" class="admin-search__input" aria-label="Rechercher un événement">
+            {% if searchQuery %}
+                <a href="{{ path('app_admin_events', {status: currentStatus}) }}" class="admin-search__clear" aria-label="Effacer la recherche">×</a>
+            {% endif %}
+            <button type="submit" class="btn btn--primary btn--small">Rechercher</button>
+        </form>
+    </header>
+
+    {# Cartes modération : actions dépendent de `currentStatus` dans le partial #}
+    {% if events|length > 0 %}
+        <p class="admin-result-count">{{ events|length }} résultat{{ events|length > 1 ? 's' : '' }}{% if searchQuery %} pour « {{ searchQuery }} »{% endif %}</p>
+        <div class="admin-event-list">
+            {% for event in events %}
+                {% include 'admin/_event_card.html.twig' with {event: event, mode: currentStatus == 'all' ? event.status.value : currentStatus} %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="admin-empty">
+            {% if searchQuery %}
+                <p>Aucun événement ne correspond à « {{ searchQuery }} » dans cette catégorie.</p>
+            {% else %}
+                <p>Aucun événement dans cette catégorie.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}

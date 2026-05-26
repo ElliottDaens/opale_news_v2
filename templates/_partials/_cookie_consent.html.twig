@@ -1,0 +1,236 @@
+{#
+_partials/_cookie_consent.html.twig
+
+QUOI : Bandeau de consentement cookies (RGPD/CNIL) + injecteur dynamique des scripts tiers (Google Maps, reCAPTCHA v3).
+
+COMMENT : HTML/CSS/JS inline sans dépendance. Choix mémorisé en localStorage (`cookies_accepted` = "true" | "false"). Expose `window.OpaleConsent` et l'événement `opale:consent-granted`.
+
+OÙ : Inclus depuis `base.html.twig` et depuis chaque template public autonome (pages qui n'étendent pas base).
+
+POURQUOI : Conformité CNIL — aucun appel aux services tiers tant que l'utilisateur n'a pas consenti explicitement (opt-in).
+#}
+<div id="cookie-banner" class="cookie-banner" role="dialog" aria-live="polite" aria-label="Consentement aux cookies" hidden>
+    <div class="cookie-banner__content">
+        <div class="cookie-banner__text">
+            <h2 class="cookie-banner__title">Cookies &amp; services tiers</h2>
+            <p>
+                Ce site utilise Google Maps (carte et autocomplétion d'adresses) et Google reCAPTCHA (protection anti-spam),
+                qui déposent des cookies et peuvent transmettre des données à Google.
+                Aucun de ces services n'est chargé tant que vous n'avez pas accepté.
+                <a href="{{ path('app_privacy_policy') }}">En savoir plus</a>
+            </p>
+        </div>
+        <div class="cookie-banner__actions">
+            <button type="button" class="cookie-banner__btn cookie-banner__btn--refuse" data-cookie-action="refuse">
+                Refuser
+            </button>
+            <button type="button" class="cookie-banner__btn cookie-banner__btn--accept" data-cookie-action="accept">
+                Accepter
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .cookie-banner {
+        position: fixed;
+        left: 1rem;
+        right: 1rem;
+        bottom: 1rem;
+        z-index: 9999;
+        background: #ffffff;
+        color: #1a1a1a;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 14px;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+        padding: 1.1rem 1.25rem;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-size: 0.95rem;
+        line-height: 1.45;
+        animation: cookie-banner-in 0.35s ease-out;
+    }
+    @media (min-width: 720px) {
+        .cookie-banner {
+            left: auto;
+            right: 1.5rem;
+            bottom: 1.5rem;
+            max-width: 520px;
+            padding: 1.25rem 1.4rem;
+        }
+    }
+    @keyframes cookie-banner-in {
+        from { transform: translateY(16px); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+    .cookie-banner__content {
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
+    }
+    .cookie-banner__title {
+        margin: 0 0 0.3rem;
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+    .cookie-banner__text p {
+        margin: 0;
+        color: #3a3a3a;
+    }
+    .cookie-banner__text a {
+        color: inherit;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+    .cookie-banner__actions {
+        display: flex;
+        gap: 0.6rem;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+    .cookie-banner__btn {
+        font: inherit;
+        cursor: pointer;
+        padding: 0.55rem 1.15rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+    .cookie-banner__btn:active { transform: translateY(1px); }
+    .cookie-banner__btn--refuse {
+        background: transparent;
+        color: #1a1a1a;
+        border-color: rgba(0, 0, 0, 0.18);
+    }
+    .cookie-banner__btn--refuse:hover { background: rgba(0, 0, 0, 0.04); }
+    .cookie-banner__btn--accept {
+        background: #1a1a1a;
+        color: #ffffff;
+    }
+    .cookie-banner__btn--accept:hover { background: #000000; }
+
+    /* Avertissement affiché à la place des services tiers si l'utilisateur n'a pas consenti */
+    .consent-required {
+        display: none;
+        padding: 0.9rem 1rem;
+        margin: 0.5rem 0;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 10px;
+        color: #7c2d12;
+        font-size: 0.92rem;
+        line-height: 1.4;
+    }
+    .consent-required button {
+        display: inline-block;
+        margin-left: 0.4rem;
+        background: none;
+        border: none;
+        padding: 0;
+        color: #7c2d12;
+        text-decoration: underline;
+        cursor: pointer;
+        font: inherit;
+    }
+    body[data-consent="pending"] .consent-required,
+    body[data-consent="refused"] .consent-required {
+        display: block;
+    }
+</style>
+
+<script>
+    (function () {
+        'use strict';
+
+        var KEY = 'cookies_accepted';
+        var banner = document.getElementById('cookie-banner');
+
+        function setBodyState(state) {
+            document.body.setAttribute('data-consent', state);
+        }
+
+        function readState() {
+            try { return localStorage.getItem(KEY); } catch (e) { return null; }
+        }
+
+        function writeState(value) {
+            try { localStorage.setItem(KEY, value); } catch (e) { /* mode privé */ }
+        }
+
+        function showBanner() { if (banner) banner.hidden = false; }
+        function hideBanner() { if (banner) banner.hidden = true; }
+
+        var loaded = false;
+        function loadScript(src) {
+            return new Promise(function (resolve, reject) {
+                var s = document.createElement('script');
+                s.src = src;
+                s.async = true;
+                s.defer = true;
+                s.onload = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
+
+        function loadThirdParty() {
+            if (loaded) return;
+            loaded = true;
+            var cfg = window.OPALE_CONFIG || {};
+
+            if (cfg.recaptchaSiteKey && !window.grecaptcha) {
+                loadScript('https://www.google.com/recaptcha/api.js?render=' + encodeURIComponent(cfg.recaptchaSiteKey));
+            }
+            if (cfg.gmapsApiKey && !(window.google && window.google.maps)) {
+                var cb = cfg.gmapsCallback || 'initSubmissionMaps';
+                loadScript('https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(cfg.gmapsApiKey) + '&libraries=places&loading=async&callback=' + encodeURIComponent(cb));
+            }
+        }
+
+        var OpaleConsent = {
+            isAccepted: function () { return readState() === 'true'; },
+            hasChoice:  function () { return readState() !== null; },
+            accept: function () {
+                writeState('true');
+                setBodyState('accepted');
+                hideBanner();
+                loadThirdParty();
+                document.dispatchEvent(new CustomEvent('opale:consent-granted'));
+            },
+            refuse: function () {
+                writeState('false');
+                setBodyState('refused');
+                hideBanner();
+                document.dispatchEvent(new CustomEvent('opale:consent-refused'));
+            },
+        };
+        window.OpaleConsent = OpaleConsent;
+
+        // État initial : décide d'afficher ou non le bandeau, et charge si déjà accepté
+        var state = readState();
+        if (state === 'true') {
+            setBodyState('accepted');
+            // Charger après que la callback initSubmissionMaps soit définie par form-submission.js (defer)
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadThirdParty);
+            } else {
+                loadThirdParty();
+            }
+        } else if (state === 'false') {
+            setBodyState('refused');
+        } else {
+            setBodyState('pending');
+            showBanner();
+        }
+
+        // Délégation : boutons du bandeau + tout bouton "réviser le consentement"
+        document.addEventListener('click', function (e) {
+            var t = e.target.closest('[data-cookie-action]');
+            if (!t) return;
+            var action = t.getAttribute('data-cookie-action');
+            if (action === 'accept') OpaleConsent.accept();
+            else if (action === 'refuse') OpaleConsent.refuse();
+            else if (action === 'reopen') { setBodyState('pending'); showBanner(); }
+        });
+    })();
+</script>

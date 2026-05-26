@@ -1,0 +1,50 @@
+{#
+event/edit_locked.html.twig
+
+QUOI : Page d'erreur affichée quand l'organisateur tente d'éditer un événement
+       déjà traité par la modération (statut Approved ou Rejected).
+
+COMMENT : Rendue avec HTTP 403 ; pas d'exposition d'infos sur l'événement (vue minimale).
+
+OÙ : Route `app_event_edit_by_token` quand `status !== Pending`.
+
+POURQUOI : Verrouiller toute édition en aval du workflow de modération sans casser
+           le parcours utilisateur (message explicite plutôt qu'un 404 muet).
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Modification impossible — Opale News</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/submission.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <a href="{{ path('app_home') }}" class="logo">
+                <span class="logo-mark" aria-hidden="true">◐</span>
+                <span class="logo-text">Opale News</span>
+            </a>
+            <p class="tagline">L'agenda local de la Côte d'Opale</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="thanks-card">
+            <div class="thanks-icon" aria-hidden="true">⚠</div>
+            <h1>Modification impossible</h1>
+            <p class="thanks-message">{{ message }}</p>
+            <p class="thanks-message thanks-message--small">
+                Pour toute correction, contactez notre équipe en répondant à
+                l'email de confirmation reçu lors de la soumission.
+            </p>
+            <div class="thanks-actions">
+                <a href="{{ path('app_home') }}" class="btn btn--primary">Retour à l'agenda</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,58 @@
+{#
+emails/organizer_confirmation.html.twig
+
+QUOI : Accusé de réception HTML envoyé à l’organisateur après soumission.
+
+COMMENT : Variables `event`, `editUrl` (lien token si présent) ; rappel du délai de modération.
+
+OÙ : `NotificationService::sendOrganizerConfirmation`.
+
+POURQUOI : Rassurer l’expéditeur et permettre une correction avant validation.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmation de réception</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #222;">
+    <h1>Merci {{ event.nomOrganisateur }} !</h1>
+
+    <p>
+        Nous avons bien reçu votre proposition d'événement
+        <strong>« {{ event.titre }} »</strong> prévue le
+        {{ event.startDate|date('d/m/Y') }} à {{ event.ville }}.
+    </p>
+
+    <p>
+        Notre équipe va l'examiner dans les meilleurs délais. Vous recevrez un
+        nouvel email dès que sa publication sera validée.
+    </p>
+
+    {% if editUrl %}
+        <p>
+            Vous souhaitez corriger une information ? Tant que nous n'avons pas
+            encore traité votre proposition, vous pouvez la modifier vous-même
+            via le lien sécurisé suivant :
+        </p>
+        <p>
+            <a href="{{ editUrl }}"
+               style="display: inline-block; padding: 10px 18px; background: #0b66c2; color: #fff; text-decoration: none; border-radius: 4px;">
+                Modifier ma proposition
+            </a>
+        </p>
+        <p style="font-size: 12px; color: #666;">
+            Ce lien ne fonctionne plus une fois l'événement validé ou refusé par
+            notre équipe. Gardez-le confidentiel : toute personne qui y a accès
+            peut modifier votre soumission.
+        </p>
+    {% endif %}
+
+    <p>
+        Si vous souhaitez nous transmettre des informations complémentaires,
+        répondez simplement à ce message.
+    </p>
+
+    <p>— L'équipe Opale News</p>
+</body>
+</html>

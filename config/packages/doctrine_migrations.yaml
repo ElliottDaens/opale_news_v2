@@ -1,0 +1,14 @@
+# doctrine_migrations.yaml
+#
+# QUOI : Pointe Doctrine Migrations vers le répertoire `migrations/` sous un namespace dédié distinct du code applicatif.
+#
+# COMMENT : `migrations_paths` mappe le namespace `DoctrineMigrations` ; le profiler de migrations est désactivé pour limiter le bruit.
+#
+# OÙ : Bundle DoctrineMigrations, invoqué par `bin/console doctrine:migrations:*`.
+#
+# POURQUOI : Versionner le schéma SQL de façon reproductible sans autoloader les classes de migration comme du code métier ordinaire.
+
+doctrine_migrations:
+    migrations_paths:
+        'DoctrineMigrations': '%kernel.project_dir%/migrations'
+    enable_profiler: false

@@ -1,0 +1,186 @@
+{#
+home/index.html.twig
+
+QUOI : Page publique d’accueil : recherche sémantique, carte Leaflet (pins cliquables), grille d’événements et zone « résultats secondaires ».
+
+COMMENT : Rendu initial (`events`, `mapEvents`) ; `home-map.js` + `search.js` + `motion.js` (AJAX, sync carte / résultats).
+
+OÙ : Route `app_home` (`HomeController::index` / recherche).
+
+POURQUOI : Cœur produit visiteur — découverte d’événements sans rechargement complet.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opale News — L'agenda de la Côte d'Opale</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+</head>
+<body>
+    {# Identité + lien vers la soumission d’événement #}
+    <header class="site-header">
+        <div class="container">
+            <a href="{{ path('app_home') }}" class="logo">
+                <span class="logo-mark" aria-hidden="true">◐</span>
+                <span class="logo-text">Opale News</span>
+            </a>
+            <p class="tagline">L'agenda local de la Côte d'Opale</p>
+            <a href="{{ path('app_event_submit') }}" class="header-cta">
+                <span aria-hidden="true">+</span> Proposer un événement
+            </a>
+        </div>
+    </header>
+
+    <main class="container">
+        {# Barre de recherche, géolocalisation, compteur ; le chip temporel est inséré par le JS #}
+        <section class="search-section">
+            <h1>Que faire près de chez vous&nbsp;?</h1>
+            <div class="search-wrapper">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input
+                    type="search"
+                    id="search-input"
+                    class="search-input"
+                    placeholder="Décrivez une ambiance, un moment, une envie…"
+                    autocomplete="off"
+                    aria-label="Rechercher un événement"
+                >
+                <div class="search-spinner" id="search-spinner" hidden aria-hidden="true"></div>
+            </div>
+            <div class="search-toolbar" id="search-toolbar">
+                <button type="button" class="toolbar-pill toolbar-pill--geo" id="geo-button" aria-pressed="false">
+                    <svg class="toolbar-pill__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 22s-8-7.58-8-13a8 8 0 0 1 16 0c0 5.42-8 13-8 13z"/>
+                        <circle cx="12" cy="9" r="3"/>
+                    </svg>
+                    <span class="toolbar-pill__label" id="geo-button-label">Ma position</span>
+                </button>
+                <div class="sort-toggle" role="group" aria-label="Trier les événements" id="sort-toggle">
+                    <button type="button" class="sort-toggle__btn is-active" data-sort="relevance" aria-pressed="true">
+                        <span aria-hidden="true">🎯</span> Pertinence
+                    </button>
+                    <button type="button" class="sort-toggle__btn" data-sort="date" aria-pressed="false">
+                        <span aria-hidden="true">📅</span> Par Date
+                    </button>
+                </div>
+                {# Emplacement du chip temporel (injection JS quand actif) #}
+            </div>
+
+            {# Chips facettes : catégories, périodes, gratuit (cumulables avec la recherche IA) #}
+            <div class="facet-chips" id="facet-chips" aria-label="Filtres rapides">
+                <div class="facet-chips__group" role="group" aria-label="Période">
+                    {% for p in periods %}
+                        <button type="button" class="facet-chip" data-facet="period" data-value="{{ p.value }}" aria-pressed="false">
+                            <span aria-hidden="true">{{ p.icon }}</span> {{ p.label }}
+                        </button>
+                    {% endfor %}
+                </div>
+                <div class="facet-chips__group" role="group" aria-label="Catégorie">
+                    {% for cat in categories %}
+                        <button type="button" class="facet-chip facet-chip--category" data-facet="category" data-value="{{ cat }}" aria-pressed="false">
+                            {{ cat }}
+                        </button>
+                    {% endfor %}
+                </div>
+                <div class="facet-chips__group" role="group" aria-label="Tarif">
+                    <button type="button" class="facet-chip facet-chip--free" data-facet="freeOnly" data-value="1" aria-pressed="false">
+                        <span aria-hidden="true">🆓</span> Gratuit
+                    </button>
+                </div>
+            </div>
+
+            <p class="results-count" id="results-count">{{ totalEvents }} événements à découvrir</p>
+            <p class="geo-status" id="geo-status" hidden></p>
+        </section>
+
+        {# Carte interactive : un pin par événement géolocalisé ; popup au clic #}
+        <section class="home-map-section" aria-label="Carte des événements sur la Côte d'Opale">
+            <div class="home-map-section__header">
+                <h2 class="home-map-section__title">Sur la carte</h2>
+                <p class="home-map-section__hint">Cliquez sur un pin pour voir l'événement (Calais, Boulogne, etc.)</p>
+            </div>
+            <div class="home-events-map" id="home-events-map" role="application" aria-label="Carte des événements"></div>
+            <p class="home-map-empty" id="home-map-empty" hidden>
+                Aucun événement géolocalisé à afficher pour le moment.
+            </p>
+        </section>
+
+        {# Cartes événements : rendu Twig initial, puis mise à jour dynamique via l’API recherche #}
+        <section class="events-section" aria-live="polite">
+            <p class="results-empty" id="results-empty" hidden>
+                Aucun événement ne correspond à votre recherche.
+            </p>
+
+            <div class="events-grid" id="events-grid">
+                {% for event in events %}
+                    <a href="{{ path('app_event_show', { id: event.id, slug: event.slug }) }}" class="event-card-link">
+                        <article class="event-card" data-event-id="{{ event.id }}">
+                            <div class="event-card__header">
+                                <span class="event-card__category">{{ event.categorie }}</span>
+                                <span class="event-card__date">{{ event.formatDateRange }}</span>
+                            </div>
+                            <h2 class="event-card__title">{{ event.titre }}</h2>
+                            <p class="event-card__ville">
+                                <svg class="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 22s-8-7.58-8-13a8 8 0 0 1 16 0c0 5.42-8 13-8 13z"/>
+                                    <circle cx="12" cy="9" r="3"/>
+                                </svg>
+                                <span>{{ event.ville }}</span>
+                            </p>
+                            <p class="event-card__description">{{ event.description }}</p>
+                        </article>
+                    </a>
+                {% endfor %}
+            </div>
+
+            <div class="load-more-wrapper">
+                <button
+                    type="button"
+                    id="load-more-btn"
+                    class="load-more-btn"
+                    {% if not hasMore %}hidden{% endif %}
+                >
+                    Charger plus d'événements
+                </button>
+            </div>
+        </section>
+
+        {# Résultats complémentaires moins ciblés (remplis par `search.js` après l’AJAX) #}
+        <section class="secondary-section" id="secondary-section" hidden aria-live="polite">
+            <div class="secondary-divider">
+                <span class="secondary-divider__line" aria-hidden="true"></span>
+                <h3 class="secondary-divider__label">
+                    <span aria-hidden="true">💡</span>
+                    Voir plus
+                </h3>
+                <span class="secondary-divider__line" aria-hidden="true"></span>
+            </div>
+            <p class="secondary-note">
+                Ces événements sont sémantiquement liés à votre recherche, mais moins ciblés que les résultats principaux. Triés par pertinence.
+            </p>
+            <div class="events-grid events-grid--secondary" id="secondary-grid" data-reveal-children></div>
+        </section>
+    </main>
+
+    {# Copyright année courante #}
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; {{ "now"|date('Y') }} Opale News — Pas-de-Calais</p>
+            <a href="{{ path('app_login') }}" class="footer-login">Connexion admin</a>
+        </div>
+    </footer>
+
+    <script>
+        window.OPALE_MAP_EVENTS = {{ mapEvents|json_encode|raw }};
+    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+    <script src="{{ asset('js/motion.js') }}" defer></script>
+    <script src="{{ asset('js/home-map.js') }}" defer></script>
+    <script src="{{ asset('js/search.js') }}" defer></script>
+
+    {# Bandeau de consentement RGPD (cohérence sur tout le site public) #}
+    {% include '_partials/_cookie_consent.html.twig' %}
+</body>
+</html>

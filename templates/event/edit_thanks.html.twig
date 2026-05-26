@@ -1,0 +1,50 @@
+{#
+event/edit_thanks.html.twig
+
+QUOI : Page de confirmation après mise à jour réussie par l'organisateur.
+
+COMMENT : Statique ; redirection post-édition. Pas d'info sur l'événement.
+
+OÙ : Route `app_event_edit_thanks`, atteinte après POST réussi sur la route d'édition.
+
+POURQUOI : Fermer le parcours sans rouvrir le formulaire et éviter les re-soumissions.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Modifications enregistrées — Opale News</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/submission.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <a href="{{ path('app_home') }}" class="logo">
+                <span class="logo-mark" aria-hidden="true">◐</span>
+                <span class="logo-text">Opale News</span>
+            </a>
+            <p class="tagline">L'agenda local de la Côte d'Opale</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="thanks-card">
+            <div class="thanks-icon" aria-hidden="true">✓</div>
+            <h1>Modifications enregistrées, merci&nbsp;!</h1>
+            <p class="thanks-message">
+                Vos changements ont bien été pris en compte. Votre proposition
+                reste <strong>en attente de modération</strong>.
+            </p>
+            <p class="thanks-message thanks-message--small">
+                Vous recevrez un email lorsque votre événement sera validé.
+            </p>
+            <div class="thanks-actions">
+                <a href="{{ path('app_home') }}" class="btn btn--primary">Retour à l'agenda</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,55 @@
+{#
+emails/organizer_approval.html.twig
+
+QUOI : Notification HTML — événement approuvé et publié.
+
+COMMENT : Variable `eventUrl` vers la fiche publique (`app_event_show`).
+
+OÙ : `NotificationService::sendOrganizerApprovalNotification`.
+
+POURQUOI : Informer l’organisateur que sa proposition est en ligne.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Votre événement est publié</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #222;">
+    <h1>Bonne nouvelle, {{ event.nomOrganisateur }} !</h1>
+
+    <p>
+        Votre événement <strong>« {{ event.titre }} »</strong> prévu le
+        {{ event.startDate|date('d/m/Y') }} à {{ event.ville }} vient d'être
+        validé par notre équipe et est désormais en ligne sur Opale News.
+    </p>
+
+    <p>
+        Il est dès à présent visible publiquement et apparaîtra dans les
+        recherches des internautes intéressés par votre catégorie.
+    </p>
+
+    <p>
+        <a href="{{ eventUrl }}"
+           style="display: inline-block; padding: 10px 18px; background: #0b66c2; color: #fff; text-decoration: none; border-radius: 4px;">
+            Voir ma page événement
+        </a>
+    </p>
+
+    <p style="font-size: 13px; color: #555;">
+        Lien direct : <a href="{{ eventUrl }}">{{ eventUrl }}</a>
+    </p>
+
+    <p>
+        N'hésitez pas à partager ce lien sur vos réseaux pour donner de la
+        visibilité à votre événement.
+    </p>
+
+    <p>
+        Si vous repérez une information à corriger, répondez simplement à ce
+        message et nous mettrons votre fiche à jour.
+    </p>
+
+    <p>— L'équipe Opale News</p>
+</body>
+</html>

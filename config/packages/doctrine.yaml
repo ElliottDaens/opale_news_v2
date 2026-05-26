@@ -1,0 +1,55 @@
+# doctrine.yaml
+#
+# QUOI : Connexion DBAL, mapping ORM attributs, stratégie de nommage, préférences d’identité PostgreSQL et filtre de soft delete.
+#
+# COMMENT : `DATABASE_URL` résolu via l’environnement ; ORM en auto-mapping sur `src/Entity` ; filtre `soft_deleted` activé globalement ; caches query/result en prod via pools dédiés ; suffixe de base en test.
+#
+# OÙ : Extension Doctrine bundle, utilisée par les repositories et migrations.
+#
+# POURQUOI : Persister le modèle métier de façon cohérente, masquer les entités supprimées logiquement et optimiser les lectures en production.
+
+doctrine:
+    dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+
+        profiling_collect_backtrace: '%kernel.debug%'
+    orm:
+        validate_xml_mapping: true
+        naming_strategy: doctrine.orm.naming_strategy.underscore
+        identity_generation_preferences:
+            Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
+        auto_mapping: true
+        mappings:
+            App:
+                type: attribute
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Entity'
+                prefix: 'App\Entity'
+                alias: App
+        filters:
+            soft_deleted:
+                class: App\Doctrine\SoftDeleteFilter
+                enabled: true
+
+when@test:
+    doctrine:
+        dbal:
+            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+
+when@prod:
+    doctrine:
+        orm:
+            query_cache_driver:
+                type: pool
+                pool: doctrine.system_cache_pool
+            result_cache_driver:
+                type: pool
+                pool: doctrine.result_cache_pool
+
+    framework:
+        cache:
+            pools:
+                doctrine.result_cache_pool:
+                    adapter: cache.app
+                doctrine.system_cache_pool:
+                    adapter: cache.system

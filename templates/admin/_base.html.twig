@@ -1,0 +1,74 @@
+{#
+admin/_base.html.twig
+
+QUOI : Layout back-office : sidebar navigation, flash Symfony, zone contenu, styles public + admin.
+
+COMMENT : Étendu par les pages admin ; `app.request.attributes._route` pour l’état actif des liens ; `app.flashes` rendus en haut du main.
+
+OÙ : Toutes les routes sous `/admin` (sauf login si page autonome).
+
+POURQUOI : Cohérence UI modération / corbeille / dashboard.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin{% endblock %} — Opale News</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    {% block stylesheets %}{% endblock %}
+</head>
+<body class="admin-body">
+    {# Navigation latérale : liens dashboard, modération, corbeille ; bas de sidebar : retour site + utilisateur + logout #}
+    <aside class="admin-sidebar">
+        <a href="{{ path('app_admin_dashboard') }}" class="admin-logo">
+            <span aria-hidden="true">◐</span> Opale News
+            <span class="admin-logo__sub">Admin</span>
+        </a>
+
+        <nav class="admin-nav">
+            <a href="{{ path('app_admin_dashboard') }}" class="admin-nav__link {{ app.request.attributes.get('_route') == 'app_admin_dashboard' ? 'is-active' : '' }}">
+                <span class="admin-nav__icon" aria-hidden="true">📊</span>
+                <span class="admin-nav__label">Tableau de bord</span>
+            </a>
+            <a href="{{ path('app_admin_events', {status: 'pending'}) }}" class="admin-nav__link {{ app.request.attributes.get('_route') == 'app_admin_events' ? 'is-active' : '' }}">
+                <span class="admin-nav__icon" aria-hidden="true">📥</span>
+                <span class="admin-nav__label">Modération</span>
+                {% set pendingCount = admin_pending_count() %}
+                {% if pendingCount > 0 %}
+                    <span class="admin-nav__badge" aria-label="{{ pendingCount }} en attente">{{ pendingCount }}</span>
+                {% endif %}
+            </a>
+            <a href="{{ path('app_admin_trash') }}" class="admin-nav__link {{ app.request.attributes.get('_route') == 'app_admin_trash' ? 'is-active' : '' }}">
+                <span class="admin-nav__icon" aria-hidden="true">🗑️</span>
+                <span class="admin-nav__label">Corbeille</span>
+            </a>
+        </nav>
+
+        <div class="admin-sidebar__footer">
+            <a href="{{ path('app_home') }}" class="admin-sidebar__link">← Voir le site public</a>
+            {% if app.user %}
+                <p class="admin-user">{{ app.user.displayName ?? app.user.email }}</p>
+                <form action="{{ path('app_logout') }}" method="post" class="admin-logout-form">
+                    <button type="submit" class="btn btn--ghost btn--small">Déconnexion</button>
+                </form>
+            {% endif %}
+        </div>
+    </aside>
+
+    <main class="admin-main">
+        {# Messages flash (succès, erreur, etc.) #}
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="flash flash--{{ label }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {% block body %}{% endblock %}
+    </main>
+
+    {# Animation UI partagée avec le site public #}
+    <script src="{{ asset('js/motion.js') }}" defer></script>
+</body>
+</html>

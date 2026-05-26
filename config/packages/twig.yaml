@@ -1,0 +1,16 @@
+# twig.yaml
+#
+# QUOI : Configure Twig pour ne charger que les modèles `*.twig` et durcit les variables en environnement de test.
+#
+# COMMENT : `file_name_pattern` restreint la découverte des templates ; `when@test` active `strict_variables` pour détecter les références invalides lors des tests.
+#
+# OÙ : Bundle Twig dans la chaîne de rendu HTTP des contrôleurs.
+#
+# POURQUOI : Réduire les chargements inutiles et faire échouer vite les templates incomplets dans la CI.
+
+twig:
+    file_name_pattern: '*.twig'
+
+when@test:
+    twig:
+        strict_variables: true

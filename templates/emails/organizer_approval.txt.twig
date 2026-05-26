@@ -1,0 +1,30 @@
+{#
+emails/organizer_approval.txt.twig
+
+QUOI : Notification texte — publication de l’événement.
+
+COMMENT : URL publique en clair.
+
+OÙ : `NotificationService::sendOrganizerApprovalNotification`.
+
+POURQUOI : Version texte du mail d’approbation.
+#}
+Bonne nouvelle, {{ event.nomOrganisateur }} !
+
+Votre événement « {{ event.titre }} » prévu le {{ event.startDate|date('d/m/Y') }}
+à {{ event.ville }} vient d'être validé par notre équipe et est désormais
+en ligne sur Opale News.
+
+Il est dès à présent visible publiquement et apparaîtra dans les
+recherches des internautes intéressés par votre catégorie.
+
+Voir ma page événement :
+{{ eventUrl }}
+
+N'hésitez pas à partager ce lien sur vos réseaux pour donner de la
+visibilité à votre événement.
+
+Si vous repérez une information à corriger, répondez simplement à ce
+message et nous mettrons votre fiche à jour.
+
+— L'équipe Opale News

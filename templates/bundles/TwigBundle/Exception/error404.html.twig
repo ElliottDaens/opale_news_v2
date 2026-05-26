@@ -1,0 +1,108 @@
+{#
+bundles/TwigBundle/Exception/error404.html.twig
+
+QUOI : Page 404 personnalisée Opale News — message chaleureux + bouton de retour à l’accueil.
+
+COMMENT : Override Symfony `TwigBundle/Exception/error404.html.twig` ; étend `base.html.twig`, reprend
+header / footer / `style.css` du site ; styles spécifiques au 404 inlinés pour éviter un fichier dédié.
+
+OÙ : Rendu automatiquement par Symfony quand `NotFoundHttpException` est levée (env prod).
+
+POURQUOI : Garder l’utilisateur dans l’univers Côte d’Opale plutôt que de l’abandonner sur l’erreur générique.
+#}
+{% extends 'base.html.twig' %}
+
+{% block title %}Page introuvable — Opale News{% endblock %}
+
+{% block meta %}
+    <meta name="robots" content="noindex,follow">
+{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <style>
+        .error-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 6rem 1.5rem;
+            min-height: 60vh;
+        }
+        .error-page__code {
+            font-size: clamp(5rem, 18vw, 9rem);
+            font-weight: 800;
+            line-height: 1;
+            margin: 0;
+            letter-spacing: -0.05em;
+            background: linear-gradient(135deg, #0a4f7a, #4ac4d9);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .error-page__title {
+            font-size: clamp(1.5rem, 4vw, 2.25rem);
+            margin: 1rem 0 0.75rem;
+        }
+        .error-page__message {
+            max-width: 36rem;
+            margin: 0 auto 2.5rem;
+            font-size: 1.05rem;
+            line-height: 1.6;
+            color: #4b5563;
+        }
+        .error-page__cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 1rem 2.25rem;
+            background: linear-gradient(135deg, #0a4f7a, #4ac4d9);
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.05rem;
+            text-decoration: none;
+            border-radius: 999px;
+            box-shadow: 0 12px 28px rgba(10, 79, 122, 0.25);
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .error-page__cta:hover,
+        .error-page__cta:focus-visible {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 32px rgba(10, 79, 122, 0.32);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+    <header class="site-header">
+        <div class="container">
+            <a href="{{ path('app_home') }}" class="logo">
+                <span class="logo-mark" aria-hidden="true">◐</span>
+                <span class="logo-text">Opale News</span>
+            </a>
+            <p class="tagline">L'agenda local de la Côte d'Opale</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="error-page" role="alert" aria-labelledby="error-title">
+            <p class="error-page__code" aria-hidden="true">404</p>
+            <h1 id="error-title" class="error-page__title">Oups, cette page s'est envolée avec le vent de la côte…</h1>
+            <p class="error-page__message">
+                Le lien que vous avez suivi est peut-être ancien, ou l'événement n'est plus en ligne.
+                Revenez à l'agenda pour découvrir tout ce qui se passe en ce moment sur la Côte d'Opale.
+            </p>
+            <a href="{{ path('app_home') }}" class="error-page__cta">
+                <span aria-hidden="true">←</span>
+                Retour à l'accueil
+            </a>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; {{ "now"|date('Y') }} Opale News — Pas-de-Calais</p>
+        </div>
+    </footer>
+{% endblock %}

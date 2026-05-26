@@ -1,0 +1,13 @@
+# mailer.yaml
+#
+# QUOI : Configuration du transport Symfony Mailer (DSN depuis l’environnement).
+#
+# COMMENT : `%env(MAILER_DSN)%` pointe vers SMTP, Mailpit en dev ou `null://null` si désactivé.
+#
+# OÙ : Chargé pour tous les environnements ; surchargé en prod via `.env.prod`.
+#
+# POURQUOI : Centraliser l’envoi des emails transactionnels (`NotificationService`).
+
+framework:
+    mailer:
+        dsn: '%env(MAILER_DSN)%'

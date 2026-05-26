@@ -1,0 +1,24 @@
+{#
+emails/admin_signalement.txt.twig
+
+QUOI : Corps texte — signalement fiche erronée.
+
+COMMENT : URLs publique et modération en clair.
+
+OÙ : `NotificationService::sendAdminSignalementAlert`.
+
+POURQUOI : Alternative texte pour les clients mail.
+#}
+Signalement à vérifier
+======================
+
+Un visiteur vient de signaler une erreur ou une modification à apporter sur l'événement ci-dessous.
+
+- Titre        : {{ event.titre }}
+- Ville        : {{ event.ville }}
+- Début        : {{ event.startDate|date('d/m/Y') }}
+- Catégorie    : {{ event.categorie }}
+- Organisateur : {{ event.nomOrganisateur }} ({{ event.emailContact }})
+
+Modération     : {{ moderationUrl }}
+Fiche publique : {{ publicUrl }}

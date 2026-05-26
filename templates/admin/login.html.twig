@@ -1,0 +1,54 @@
+{#
+admin/login.html.twig
+
+QUOI : Page de connexion du pare-feu Symfony (formulaire email / mot de passe, remember me, erreur traduite).
+
+COMMENT : Autonome (pas `_base`) ; champs nommés attendus par le firewall ; CSRF `authenticate`.
+
+OÙ : Route login admin.
+
+POURQUOI : Point d’entrée sécurisé avant l’espace modération.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion admin — Opale News</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+</head>
+<body class="login-body">
+    <main class="login-container">
+        <a href="{{ path('app_home') }}" class="login-logo">
+            <span aria-hidden="true">◐</span> Opale News
+        </a>
+        <h1>Connexion admin</h1>
+
+        {# Erreur Symfony Security (mauvais ident, etc.) #}
+        {% if error %}
+            <div class="flash flash--error">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
+        {% endif %}
+
+        <form method="post" class="login-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            <label for="username">Email</label>
+            <input type="email" id="username" name="_username" value="{{ last_username }}" required autofocus autocomplete="email">
+
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="_password" required autocomplete="current-password">
+
+            <label class="login-remember">
+                <input type="checkbox" name="_remember_me"> Se souvenir de moi
+            </label>
+
+            <button type="submit" class="btn btn--primary">Se connecter</button>
+        </form>
+
+        <p class="login-back">
+            <a href="{{ path('app_home') }}">← Retour au site</a>
+        </p>
+    </main>
+</body>
+</html>

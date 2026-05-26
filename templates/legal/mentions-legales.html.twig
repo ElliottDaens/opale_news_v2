@@ -1,0 +1,51 @@
+{#
+legal/mentions-legales.html.twig
+
+QUOI : Page statique des mentions légales (éditeur, hébergeur, propriété intellectuelle).
+
+COMMENT : Étend `base.html.twig` ; contenu éditorial sans logique métier.
+
+OÙ : Route `app_legal_notice` (`SystemController::legalNotice`).
+
+POURQUOI : Obligation légale pour un site édité en France.
+#}
+{% extends 'base.html.twig' %}
+
+{% block title %}Mentions légales — Opale News{% endblock %}
+
+{% block body %}
+<main class="legal-page">
+    <h1>Mentions légales</h1>
+
+    <h2>Éditeur du site</h2>
+    <p>
+        Opale News<br>
+        Société par actions simplifiée au capital de 1 000 €<br>
+        Siège social : 1 rue de la Côte d'Opale, 62200 Boulogne-sur-Mer<br>
+        RCS Boulogne-sur-Mer — SIREN 000 000 000<br>
+        Directeur de la publication : Opale News
+    </p>
+
+    <h2>Hébergeur</h2>
+    <p>
+        OVH SAS<br>
+        2 rue Kellermann, 59100 Roubaix, France<br>
+        Téléphone : +33 9 72 10 10 07
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+        Pour toute demande relative au site, écrire à : contact@opale-news.example
+    </p>
+
+    <h2>Propriété intellectuelle</h2>
+    <p>
+        L'ensemble des contenus présents sur le site (textes, logos, images, vidéos)
+        est la propriété d'Opale News ou de ses partenaires. Toute reproduction,
+        représentation ou diffusion, totale ou partielle, est interdite sans
+        autorisation préalable.
+    </p>
+
+    <p><a href="{{ path('app_home') }}">← Retour à l'accueil</a></p>
+</main>
+{% endblock %}

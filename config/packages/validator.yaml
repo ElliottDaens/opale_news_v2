@@ -1,0 +1,14 @@
+# validator.yaml
+#
+# QUOI : Configuration du composant Validator et désactivation du contrôle « mot de passe compromis » en tests.
+#
+# COMMENT : Les réglages par défaut du Framework s’appliquent hors test ; `when@test` coupe l’appel réseau `not_compromised_password` pour des builds rapides et hors ligne.
+#
+# OÙ : Couche de validation des DTO, formulaires et arguments de contrôleurs.
+#
+# POURQUOI : Garder des contraintes riches en prod tout en rendant la suite de tests déterministe et sans dépendance externe.
+
+when@test:
+    framework:
+        validation:
+            not_compromised_password: false

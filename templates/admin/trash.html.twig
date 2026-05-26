@@ -1,0 +1,71 @@
+{#
+admin/trash.html.twig
+
+QUOI : Liste des événements supprimés (soft-delete) avec restauration ou suppression définitive, et vidage de corbeille.
+
+COMMENT : Formulaires POST + jetons CSRF ; confirmations JS `onsubmit` sur les actions destructives.
+
+OÙ : Route corbeille admin.
+
+POURQUOI : Récupération ou purge sans toucher au schéma hors flux métier.
+#}
+{% extends 'admin/_base.html.twig' %}
+
+{% block title %}Corbeille{% endblock %}
+
+{% block body %}
+    {# Titre + sous-titre + option « vider toute la corbeille » #}
+    <header class="admin-page-header">
+        <h1>Corbeille</h1>
+        <p class="admin-page-subtitle">{{ events|length }} événement{{ events|length > 1 ? 's' : '' }} supprimé{{ events|length > 1 ? 's' : '' }}.</p>
+
+        {% if events|length > 0 %}
+            <form action="{{ path('app_admin_trash_empty') }}" method="post" class="inline-form"
+                  onsubmit="return confirm('Vider toute la corbeille ? Cette action est irréversible.');">
+                <input type="hidden" name="_token" value="{{ csrf_token('empty_trash') }}">
+                <button type="submit" class="btn btn--danger">Vider la corbeille</button>
+            </form>
+        {% endif %}
+    </header>
+
+    {# Cartes linéaires : métadonnées + restaurer / supprimer définitivement #}
+    {% if events|length > 0 %}
+        <div class="admin-event-list">
+            {% for event in events %}
+                <article class="admin-event-card admin-event-card--trashed">
+                    <div class="admin-event-card__main">
+                        <div class="admin-event-card__header">
+                            <span class="admin-event-card__status">{{ event.status.label }}</span>
+                            <span class="admin-event-card__category">{{ event.categorie }}</span>
+                            <time class="admin-event-card__date">{{ event.formatDateRange }}</time>
+                        </div>
+                        <h3 class="admin-event-card__title">{{ event.titre }}</h3>
+                        <div class="admin-event-card__meta">
+                            <span><strong>📍</strong> {{ event.ville }}</span>
+                            <span><strong>🏢</strong> {{ event.nomOrganisateur }}</span>
+                        </div>
+                        <p class="admin-event-card__submitted">
+                            Supprimé le {{ event.deletedAt|date('d/m/Y à H:i') }}
+                        </p>
+                    </div>
+
+                    <div class="admin-event-card__actions">
+                        <form action="{{ path('app_admin_trash_restore', {id: event.id}) }}" method="post" class="inline-form">
+                            <input type="hidden" name="_token" value="{{ csrf_token('restore' ~ event.id) }}">
+                            <button type="submit" class="btn btn--primary btn--small">↺ Restaurer</button>
+                        </form>
+                        <form action="{{ path('app_admin_trash_destroy', {id: event.id}) }}" method="post" class="inline-form"
+                              onsubmit="return confirm('Supprimer DÉFINITIVEMENT « {{ event.titre|e('js') }} » ? Cette action est irréversible.');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('destroy' ~ event.id) }}">
+                            <button type="submit" class="btn btn--danger btn--small">Supprimer définitivement</button>
+                        </form>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="admin-empty">
+            <p>🗑️ Corbeille vide.</p>
+        </div>
+    {% endif %}
+{% endblock %}

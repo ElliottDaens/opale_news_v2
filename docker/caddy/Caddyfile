@@ -1,0 +1,77 @@
+# docker/caddy/Caddyfile
+#
+# QUOI : Reverse proxy TLS (Let's Encrypt), assets statiques, FastCGI PHP-FPM.
+#
+# COMMENT : Variables `{$SITE_DOMAIN}`, `{$ACME_EMAIL}` ; en-têtes sécurité ; `php_fastcgi` + `file_server`.
+#
+# OÙ : Service `caddy` de `compose.prod.yaml`.
+#
+# POURQUOI : TLS automatique et une seule brique devant Symfony en production.
+#
+# Variables résolues depuis l'environnement du conteneur Caddy :
+#   - {$SITE_DOMAIN}     : nom de domaine principal (ex. opale.news)
+#   - {$ACME_EMAIL}      : adresse mail Let's Encrypt
+#   - {$SITE_REDIRECT_WWW} : si "true", redirige www.<domaine> vers <domaine>
+
+{
+    email {$ACME_EMAIL}
+    servers {
+        trusted_proxies static private_ranges
+    }
+}
+
+# Redirection optionnelle www → apex.
+www.{$SITE_DOMAIN} {
+    redir https://{$SITE_DOMAIN}{uri} permanent
+}
+
+{$SITE_DOMAIN} {
+    root * /var/www/html/public
+
+    # En-têtes de sécurité par défaut.
+    header {
+        Strict-Transport-Security  "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options     "nosniff"
+        X-Frame-Options            "SAMEORIGIN"
+        Referrer-Policy            "strict-origin-when-cross-origin"
+        Permissions-Policy         "geolocation=(self), camera=(), microphone=(), interest-cohort=()"
+        Cross-Origin-Opener-Policy "same-origin"
+        # Retire la signature Caddy (analogue à expose_php=Off).
+        -Server
+    }
+
+    encode zstd gzip
+
+    # Cache long pour les assets immuables (hash dans le nom de fichier).
+    @static {
+        path_regexp static \.(css|js|jpg|jpeg|gif|png|webp|svg|ico|woff2?|ttf|eot|map)$
+    }
+    header @static {
+        Cache-Control "public, max-age=604800, immutable"
+    }
+
+    # Limites de taille (uploads photos, etc.).
+    request_body {
+        max_size 32MB
+    }
+
+    # Refus d'accès aux fichiers cachés et aux PHP autres que index.php.
+    @forbidden {
+        path /\.* /vendor/* /var/* /config/* /src/* /tests/* /tools/*
+    }
+    respond @forbidden 404
+
+    # Sources statiques en premier, puis fallback Symfony.
+    php_fastcgi php:9000 {
+        index index.php
+        # Capture stderr du worker FPM dans les logs Caddy (visibles via `docker logs`).
+        capture_stderr
+    }
+
+    file_server
+
+    log {
+        output stdout
+        format json
+    }
+}

@@ -1,0 +1,18 @@
+# routing.yaml
+#
+# QUOI : Fournit une URI par défaut pour la génération d’URL en contexte non HTTP (CLI, consumers) et assouplit les contraintes de route en production.
+#
+# COMMENT : `default_uri` vient de `%env(DEFAULT_URI)%` ; en prod `strict_requirements` passe à `null` pour éviter des exceptions sur paramètres optionnels lors du warmup.
+#
+# OÙ : Extension Routing / Framework, utilisée par `Router`, `UrlGenerator` et les commandes console qui publient des liens.
+#
+# POURQUOI : Générer des liens absolus fiables hors requête web tout en évititant des erreurs de génération en prod.
+
+framework:
+    router:
+        default_uri: '%env(DEFAULT_URI)%'
+
+when@prod:
+    framework:
+        router:
+            strict_requirements: null

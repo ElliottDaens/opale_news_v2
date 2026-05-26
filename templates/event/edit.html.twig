@@ -1,0 +1,187 @@
+{#
+event/edit.html.twig
+
+QUOI : Formulaire d'édition en auto-service par l'organisateur (lien email + jeton).
+
+COMMENT : Reprend `EventSubmissionType` ; même JS/CSS que la soumission ; preview des images existantes.
+
+OÙ : Route `app_event_edit_by_token` accessible via `/event/modifier/{updateToken}`.
+
+POURQUOI : Permettre à l'organisateur de corriger ses propres erreurs tant que l'événement
+           n'est pas encore validé ou refusé par la modération.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Modifier ma proposition — Opale News</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/submission.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <a href="{{ path('app_home') }}" class="logo">
+                <span class="logo-mark" aria-hidden="true">◐</span>
+                <span class="logo-text">Opale News</span>
+            </a>
+            <p class="tagline">L'agenda local de la Côte d'Opale</p>
+        </div>
+    </header>
+
+    <main class="container submission-container">
+        <a href="{{ path('app_home') }}" class="back-link">← Retour aux événements</a>
+
+        <h1>Modifier ma proposition</h1>
+        <p class="submission-intro">
+            Votre proposition est <strong>en attente de modération</strong>.
+            Vous pouvez encore la corriger ici. Une fois soumise à nouveau, elle
+            restera en attente jusqu'à validation par notre équipe.
+        </p>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="flash flash--{{ label }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {{ form_start(form, {'attr': {'class': 'submission-form', 'novalidate': 'novalidate', 'enctype': 'multipart/form-data'}}) }}
+
+            <fieldset class="form-section">
+                <legend>Informations générales</legend>
+                <div class="form-row">
+                    {{ form_row(form.titre) }}
+                    {{ form_row(form.nomOrganisateur) }}
+                </div>
+                <div class="form-row">
+                    {{ form_row(form.emailContact) }}
+                    {{ form_row(form.prix) }}
+                </div>
+                <div class="form-row form-row--with-action">
+                    {{ form_row(form.categorie) }}
+                    <button type="button" class="btn btn--ai" id="btn-suggest-category" data-needs="titre,description">
+                        <span aria-hidden="true">✦</span> L'IA suggère
+                    </button>
+                </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+                <legend>Dates &amp; horaires</legend>
+                <div class="form-row">
+                    {{ form_row(form.startDate) }}
+                    {{ form_row(form.endDate) }}
+                </div>
+                <div class="form-row">
+                    {{ form_row(form.startTime) }}
+                    {{ form_row(form.endTime) }}
+                </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+                <legend>Lieu</legend>
+
+                <div class="consent-required" role="status">
+                    Pour voir la carte et soumettre/rechercher un événement, veuillez accepter les cookies tiers.
+                    <button type="button" data-cookie-action="reopen">Gérer mes choix</button>
+                </div>
+
+                {{ form_row(form.adresse) }}
+                <div class="form-row">
+                    {{ form_row(form.ville) }}
+                    {{ form_row(form.codePostal) }}
+                </div>
+                {{ form_widget(form.latitude) }}
+                {{ form_widget(form.longitude) }}
+            </fieldset>
+
+            <fieldset class="form-section">
+                <legend>Description</legend>
+                {{ form_row(form.description) }}
+                <div class="form-actions-inline">
+                    <button type="button" class="btn btn--ai" id="btn-improve-desc">
+                        <span aria-hidden="true">✦</span> Améliorer
+                    </button>
+                    <button type="button" class="btn btn--ai-secondary" id="btn-correct-desc">
+                        <span aria-hidden="true">✓</span> Corriger
+                    </button>
+                </div>
+            </fieldset>
+
+            <fieldset class="form-section">
+                <legend>Visuels</legend>
+                <p class="form-hint">
+                    JPEG, PNG ou WebP — 8 Mo max. Laissez vide pour conserver
+                    l'image actuelle, ou téléversez-en une nouvelle pour la remplacer.
+                </p>
+
+                <div class="form-row">
+                    <div class="image-uploader" data-ratio-w="4" data-ratio-h="3" data-output-w="800" data-output-h="600">
+                        {{ form_label(form.imageCouverture) }}
+                        {% if event.imageCouverture %}
+                            <p class="form-hint">Image actuelle :</p>
+                            <img src="{{ asset('uploads/' ~ event.imageCouverture) }}" alt="Couverture actuelle" style="max-width: 200px; height: auto; border-radius: 4px;">
+                        {% endif %}
+                        {{ form_widget(form.imageCouverture, {'attr': {'accept': 'image/jpeg,image/png,image/webp'}}) }}
+                        <div class="image-preview" data-preview></div>
+                        {{ form_errors(form.imageCouverture) }}
+                    </div>
+
+                    <div class="image-uploader" data-ratio-w="16" data-ratio-h="6" data-output-w="1600" data-output-h="600">
+                        {{ form_label(form.imageBanniere) }}
+                        {% if event.imageBanniere %}
+                            <p class="form-hint">Image actuelle :</p>
+                            <img src="{{ asset('uploads/' ~ event.imageBanniere) }}" alt="Bannière actuelle" style="max-width: 400px; height: auto; border-radius: 4px;">
+                        {% endif %}
+                        {{ form_widget(form.imageBanniere, {'attr': {'accept': 'image/jpeg,image/png,image/webp'}}) }}
+                        <div class="image-preview" data-preview></div>
+                        {{ form_errors(form.imageBanniere) }}
+                    </div>
+                </div>
+            </fieldset>
+
+            {{ form_row(form.website) }}
+
+            <div class="form-footer">
+                <a href="{{ path('app_home') }}" class="btn btn--ghost">Annuler</a>
+                <button type="submit" class="btn btn--primary">Enregistrer les modifications</button>
+            </div>
+
+            <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+
+        {{ form_end(form) }}
+
+        <p class="submission-legal">
+            Protection anti-spam par Google reCAPTCHA.
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Vie privée</a> ·
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Conditions</a>
+        </p>
+    </main>
+
+    <dialog class="cropper-modal" id="cropper-modal">
+        <h3 class="cropper-modal__title">Recadrer l'image</h3>
+        <div class="cropper-modal__canvas">
+            <img id="cropper-image" alt="">
+        </div>
+        <div class="cropper-modal__actions">
+            <button type="button" class="btn btn--ghost" id="cropper-cancel">Annuler</button>
+            <button type="button" class="btn btn--primary" id="cropper-confirm">Valider le recadrage</button>
+        </div>
+    </dialog>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" defer></script>
+
+    <script>
+        window.OPALE_CONFIG = {
+            recaptchaSiteKey: {{ recaptcha_site_key|json_encode|raw }},
+            gmapsApiKey: {{ gmaps_api_key|json_encode|raw }},
+            gmapsCallback: 'initSubmissionMaps',
+        };
+    </script>
+    <script src="{{ asset('js/form-submission.js') }}" defer></script>
+
+    {% include '_partials/_cookie_consent.html.twig' %}
+</body>
+</html>

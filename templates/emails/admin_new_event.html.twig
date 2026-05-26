@@ -1,0 +1,34 @@
+{#
+emails/admin_new_event.html.twig
+
+QUOI : Corps HTML — alerte admin lors d’une nouvelle soumission publique.
+
+COMMENT : Tableau récapitulatif ; variables `event` ; lien vers la modération en pied de mail.
+
+OÙ : `NotificationService::sendAdminNewEventAlert`.
+
+POURQUOI : Prévenir l’équipe sans consulter la base.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouvelle soumission événement</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #222;">
+    <h1>Nouvelle soumission à modérer</h1>
+
+    <p>Un nouvel événement vient d'être proposé sur Opale News.</p>
+
+    <table cellpadding="6" cellspacing="0" border="0" style="border-collapse: collapse;">
+        <tr><td><strong>Titre</strong></td><td>{{ event.titre }}</td></tr>
+        <tr><td><strong>Organisateur</strong></td><td>{{ event.nomOrganisateur }}</td></tr>
+        <tr><td><strong>Email contact</strong></td><td>{{ event.emailContact }}</td></tr>
+        <tr><td><strong>Ville</strong></td><td>{{ event.ville }}</td></tr>
+        <tr><td><strong>Date de début</strong></td><td>{{ event.startDate|date('d/m/Y') }}</td></tr>
+        <tr><td><strong>Catégorie</strong></td><td>{{ event.categorie }}</td></tr>
+    </table>
+
+    <p>Connectez-vous à l'administration pour modérer cette soumission.</p>
+</body>
+</html>

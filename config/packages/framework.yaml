@@ -1,0 +1,48 @@
+# framework.yaml
+#
+# QUOI : Paramètres du FrameworkBundle : secret d’application, session, protection CSRF,
+#        et — en prod uniquement — confiance des proxies + verrouillage du Host attendu.
+#
+# COMMENT : Lit `%env(APP_SECRET)%`, active session et CSRF ; `when@test` bascule le kernel
+#           en mode test et une fabrique de session mock ; `when@prod` câble `trusted_proxies`,
+#           `trusted_headers` et `trusted_hosts` à partir des variables d'env injectées par compose.prod.yaml.
+#
+# OÙ : Package Symfony chargé pour tous les environnements, surchargé en `prod` et `test`.
+#
+# POURQUOI : Assurer la base HTTP (sessions, formulaires, jetons CSRF) ET, en prod,
+#            permettre à Symfony de générer des URLs HTTPS correctes derrière Caddy
+#            tout en refusant les requêtes au mauvais Host (anti host-header injection).
+
+framework:
+    secret: '%env(APP_SECRET)%'
+
+    session:
+        cookie_secure: auto
+        cookie_samesite: lax
+        cookie_httponly: true
+
+    csrf_protection:
+        enabled: true
+        stateless_token_ids: []
+    form:
+        csrf_protection:
+            enabled: true
+
+when@prod:
+    framework:
+        trusted_proxies: '%env(TRUSTED_PROXIES)%'
+        trusted_headers:
+            - x-forwarded-for
+            - x-forwarded-host
+            - x-forwarded-proto
+            - x-forwarded-port
+            - x-forwarded-prefix
+        trusted_hosts:
+            - '^%env(SITE_DOMAIN)%$'
+            - '^www\.%env(SITE_DOMAIN)%$'
+
+when@test:
+    framework:
+        test: true
+        session:
+            storage_factory_id: session.storage.factory.mock_file

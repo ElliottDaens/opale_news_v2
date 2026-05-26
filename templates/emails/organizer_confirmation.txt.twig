@@ -1,0 +1,35 @@
+{#
+emails/organizer_confirmation.txt.twig
+
+QUOI : Accusé de réception texte pour l’organisateur.
+
+COMMENT : Reprend le message HTML ; `editUrl` en clair si défini.
+
+OÙ : `NotificationService::sendOrganizerConfirmation`.
+
+POURQUOI : Compatibilité clients mail texte.
+#}
+Merci {{ event.nomOrganisateur }} !
+
+Nous avons bien reçu votre proposition d'événement « {{ event.titre }} »
+prévue le {{ event.startDate|date('d/m/Y') }} à {{ event.ville }}.
+
+Notre équipe va l'examiner dans les meilleurs délais. Vous recevrez un
+nouvel email dès que sa publication sera validée.
+
+{% if editUrl -%}
+Vous souhaitez corriger une information ? Tant que nous n'avons pas
+encore traité votre proposition, vous pouvez la modifier vous-même
+via le lien sécurisé suivant :
+
+{{ editUrl }}
+
+Ce lien ne fonctionne plus une fois l'événement validé ou refusé par
+notre équipe. Gardez-le confidentiel : toute personne qui y a accès
+peut modifier votre soumission.
+
+{% endif -%}
+Si vous souhaitez nous transmettre des informations complémentaires,
+répondez simplement à ce message.
+
+— L'équipe Opale News

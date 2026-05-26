@@ -1,0 +1,24 @@
+{#
+emails/admin_new_event.txt.twig
+
+QUOI : Corps texte brut — alerte admin (nouvelle soumission).
+
+COMMENT : Même contenu que la version HTML, sans balises.
+
+OÙ : `NotificationService::sendAdminNewEventAlert`.
+
+POURQUOI : Clients mail en mode texte uniquement.
+#}
+Nouvelle soumission à modérer
+==============================
+
+Un nouvel événement vient d'être proposé sur Opale News.
+
+- Titre        : {{ event.titre }}
+- Organisateur : {{ event.nomOrganisateur }}
+- Email        : {{ event.emailContact }}
+- Ville        : {{ event.ville }}
+- Début        : {{ event.startDate|date('d/m/Y') }}
+- Catégorie    : {{ event.categorie }}
+
+Connectez-vous à l'administration pour modérer cette soumission.

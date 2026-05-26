@@ -1,0 +1,85 @@
+{#
+admin/_event_card.html.twig
+
+QUOI : Carte d’un événement côté admin : infos complètes + actions selon `mode` (pending / approved / rejected).
+
+COMMENT : `mode` pilote approuver/refuser ; sinon annulation, dé-publication ou ré-approbation ; corbeille toujours proposée. Jetons CSRF par action.
+
+OÙ : Inclus depuis `dashboard` et `events`.
+
+POURQUOI : Un seul composant pour éviter la duplication des formulaires de modération.
+#}
+<article class="admin-event-card admin-event-card--{{ event.status.value }}">
+    <div class="admin-event-card__main">
+        <div class="admin-event-card__header">
+            <span class="admin-event-card__status">{{ event.status.label }}</span>
+            <span class="admin-event-card__category">{{ event.categorie }}</span>
+            <time class="admin-event-card__date">{{ event.formatDateRange }}</time>
+        </div>
+
+        <h3 class="admin-event-card__title">{{ event.titre }}</h3>
+
+        <div class="admin-event-card__meta">
+            <span><strong>📍</strong> {{ event.ville }} ({{ event.codePostal }})</span>
+            <span><strong>🏢</strong> {{ event.nomOrganisateur }}</span>
+            <span><strong>✉️</strong> <a href="mailto:{{ event.emailContact }}">{{ event.emailContact }}</a></span>
+            <span><strong>💰</strong> {{ event.prixDisplay }}</span>
+        </div>
+
+        <p class="admin-event-card__description">{{ event.description }}</p>
+
+        <p class="admin-event-card__submitted">
+            Soumis le {{ event.createdAt|date('d/m/Y à H:i') }}
+            {% if event.moderatedAt %}
+                · Modéré le {{ event.moderatedAt|date('d/m/Y à H:i') }}
+            {% endif %}
+        </p>
+    </div>
+
+    {# Actions : file d’attente vs déjà modéré ; corbeille en dernier #}
+    <div class="admin-event-card__actions">
+        {% if mode == 'pending' %}
+            {# Approuver / refuser #}
+            <form action="{{ path('app_admin_event_approve', {id: event.id}) }}" method="post" class="inline-form">
+                <input type="hidden" name="_token" value="{{ csrf_token('approve' ~ event.id) }}">
+                <button type="submit" class="btn btn--primary btn--small">✓ Approuver</button>
+            </form>
+            <form action="{{ path('app_admin_event_reject', {id: event.id}) }}" method="post" class="inline-form">
+                <input type="hidden" name="_token" value="{{ csrf_token('reject' ~ event.id) }}">
+                <button type="submit" class="btn btn--danger btn--small">✗ Refuser</button>
+            </form>
+        {% else %}
+            {# Après modération : annuler si historique, adapter selon statut courant #}
+            {% if event.previousStatus %}
+                <form action="{{ path('app_admin_event_undo', {id: event.id}) }}" method="post" class="inline-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('undo' ~ event.id) }}">
+                    <button type="submit" class="btn btn--ghost btn--small">↶ Annuler</button>
+                </form>
+            {% endif %}
+            {% if event.status.value == 'approved' %}
+                <form action="{{ path('app_admin_event_reject', {id: event.id}) }}" method="post" class="inline-form"
+                      onsubmit="return confirm('Vraiment refuser cet événement déjà publié ?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('reject' ~ event.id) }}">
+                    <button type="submit" class="btn btn--danger btn--small">Dé-publier</button>
+                </form>
+            {% elseif event.status.value == 'rejected' %}
+                <form action="{{ path('app_admin_event_approve', {id: event.id}) }}" method="post" class="inline-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('approve' ~ event.id) }}">
+                    <button type="submit" class="btn btn--primary btn--small">Approuver finalement</button>
+                </form>
+            {% endif %}
+        {% endif %}
+
+        {# Toujours : édition de l'événement (corrections de saisie) #}
+        <a href="{{ path('app_admin_event_edit', {id: event.id}) }}" class="btn btn--edit btn--small" title="Modifier les informations de l'événement">
+            <span aria-hidden="true">✎</span> Éditer
+        </a>
+
+        {# Toujours : envoi en corbeille (soft delete) #}
+        <form action="{{ path('app_admin_event_delete', {id: event.id}) }}" method="post" class="inline-form"
+              onsubmit="return confirm('Mettre cet événement à la corbeille ?');">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ event.id) }}">
+            <button type="submit" class="btn btn--ghost btn--small btn--icon-only" title="Mettre à la corbeille">🗑️</button>
+        </form>
+    </div>
+</article>

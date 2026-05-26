@@ -1,0 +1,191 @@
+{#
+event/submission.html.twig
+
+QUOI : Formulaire public de proposition d’événement (Symfony Form), anti-spam, images recadrées, suggestions IA, géocodage Google.
+
+COMMENT : Multipart + `form-submission.js` (Cropper, reCAPTCHA v3, Places) ; champs lat/lng cachés ; honeypot `website`.
+
+OÙ : Route soumission d’événement.
+
+POURQUOI : Collecte structurée avant modération humaine.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposer un événement — Opale News</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/submission.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <a href="{{ path('app_home') }}" class="logo">
+                <span class="logo-mark" aria-hidden="true">◐</span>
+                <span class="logo-text">Opale News</span>
+            </a>
+            <p class="tagline">L'agenda local de la Côte d'Opale</p>
+        </div>
+    </header>
+
+    <main class="container submission-container">
+        {# Intro + flashes #}
+        <a href="{{ path('app_home') }}" class="back-link">← Retour aux événements</a>
+
+        <h1>Proposer un événement</h1>
+        <p class="submission-intro">
+            Aidez-nous à enrichir l'agenda de la Côte d'Opale. Votre événement sera visible
+            sur le site après validation par notre équipe (généralement sous 48 h).
+        </p>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="flash flash--{{ label }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {# Formulaire Symfony : multipart pour fichiers ; validation HTML désactivée (gérée serveur + JS) #}
+        {{ form_start(form, {'attr': {'class': 'submission-form', 'novalidate': 'novalidate', 'enctype': 'multipart/form-data'}}) }}
+
+            {# Titre, orga, contact, prix, catégorie + suggestion IA #}
+            <fieldset class="form-section">
+                <legend>Informations générales</legend>
+                <div class="form-row">
+                    {{ form_row(form.titre) }}
+                    {{ form_row(form.nomOrganisateur) }}
+                </div>
+                <div class="form-row">
+                    {{ form_row(form.emailContact) }}
+                    {{ form_row(form.prix) }}
+                </div>
+                <div class="form-row form-row--with-action">
+                    {{ form_row(form.categorie) }}
+                    <button type="button" class="btn btn--ai" id="btn-suggest-category" data-needs="titre,description">
+                        <span aria-hidden="true">✦</span> L'IA suggère
+                    </button>
+                </div>
+            </fieldset>
+
+            {# Plage calendaire + horaires #}
+            <fieldset class="form-section">
+                <legend>Dates &amp; horaires</legend>
+                <div class="form-row">
+                    {{ form_row(form.startDate) }}
+                    {{ form_row(form.endDate) }}
+                </div>
+                <div class="form-row">
+                    {{ form_row(form.startTime) }}
+                    {{ form_row(form.endTime) }}
+                </div>
+            </fieldset>
+
+            {# Adresse complétée par Google Places → remplit lat/lng cachés #}
+            <fieldset class="form-section">
+                <legend>Lieu</legend>
+
+                {# Affiché tant que l'utilisateur n'a pas consenti aux cookies tiers #}
+                <div class="consent-required" role="status">
+                    Pour voir la carte et soumettre/rechercher un événement, veuillez accepter les cookies tiers.
+                    <button type="button" data-cookie-action="reopen">Gérer mes choix</button>
+                </div>
+
+                {{ form_row(form.adresse) }}
+                <div class="form-row">
+                    {{ form_row(form.ville) }}
+                    {{ form_row(form.codePostal) }}
+                </div>
+                {{ form_widget(form.latitude) }}
+                {{ form_widget(form.longitude) }}
+            </fieldset>
+
+            {# Texte libre + boutons Gemini #}
+            <fieldset class="form-section">
+                <legend>Description</legend>
+                {{ form_row(form.description) }}
+                <div class="form-actions-inline">
+                    <button type="button" class="btn btn--ai" id="btn-improve-desc">
+                        <span aria-hidden="true">✦</span> Améliorer
+                    </button>
+                    <button type="button" class="btn btn--ai-secondary" id="btn-correct-desc">
+                        <span aria-hidden="true">✓</span> Corriger
+                    </button>
+                </div>
+            </fieldset>
+
+            {# Couverture + bannière : zones `.image-uploader` pilotées par Cropper #}
+            <fieldset class="form-section">
+                <legend>Visuels</legend>
+                <p class="form-hint">JPEG, PNG ou WebP — 8 Mo max. Recadrez après upload.</p>
+
+                <div class="form-row">
+                    <div class="image-uploader" data-ratio-w="4" data-ratio-h="3" data-output-w="800" data-output-h="600">
+                        {{ form_label(form.imageCouverture) }}
+                        {{ form_widget(form.imageCouverture, {'attr': {'accept': 'image/jpeg,image/png,image/webp'}}) }}
+                        <div class="image-preview" data-preview></div>
+                        {{ form_errors(form.imageCouverture) }}
+                    </div>
+
+                    <div class="image-uploader" data-ratio-w="16" data-ratio-h="6" data-output-w="1600" data-output-h="600">
+                        {{ form_label(form.imageBanniere) }}
+                        {{ form_widget(form.imageBanniere, {'attr': {'accept': 'image/jpeg,image/png,image/webp'}}) }}
+                        <div class="image-preview" data-preview></div>
+                        {{ form_errors(form.imageBanniere) }}
+                    </div>
+                </div>
+            </fieldset>
+
+            {# Champ leurre (honeypot) : masqué en CSS ; doit rester vide #}
+            {{ form_row(form.website) }}
+
+            <div class="form-footer">
+                <a href="{{ path('app_home') }}" class="btn btn--ghost">Annuler</a>
+                <button type="submit" class="btn btn--primary">Soumettre l'événement</button>
+            </div>
+
+            <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+
+        {# Fin formulaire : tokens reCAPTCHA remplis avant submit par le JS #}
+        {{ form_end(form) }}
+
+        <p class="submission-legal">
+            Protection anti-spam par Google reCAPTCHA.
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Vie privée</a> ·
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Conditions</a>
+        </p>
+    </main>
+
+    {# Dialogue accessible piloté par `form-submission.js` pour le recadrage #}
+    <dialog class="cropper-modal" id="cropper-modal">
+        <h3 class="cropper-modal__title">Recadrer l'image</h3>
+        <div class="cropper-modal__canvas">
+            <img id="cropper-image" alt="">
+        </div>
+        <div class="cropper-modal__actions">
+            <button type="button" class="btn btn--ghost" id="cropper-cancel">Annuler</button>
+            <button type="button" class="btn btn--primary" id="cropper-confirm">Valider le recadrage</button>
+        </div>
+    </dialog>
+
+    {# Cropper reste chargé en clair (pas de cookies tiers, pas de tracking) #}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js" defer></script>
+
+    {#
+      reCAPTCHA & Google Maps sont injectés dynamiquement par le bandeau cookies
+      (templates/_partials/_cookie_consent.html.twig) UNIQUEMENT après consentement,
+      en lisant les clés depuis window.OPALE_CONFIG ci-dessous.
+    #}
+    <script>
+        window.OPALE_CONFIG = {
+            recaptchaSiteKey: {{ recaptcha_site_key|json_encode|raw }},
+            gmapsApiKey: {{ gmaps_api_key|json_encode|raw }},
+            gmapsCallback: 'initSubmissionMaps',
+        };
+    </script>
+    <script src="{{ asset('js/form-submission.js') }}" defer></script>
+
+    {# Bandeau de consentement RGPD — gère l'injection conditionnelle des scripts tiers #}
+    {% include '_partials/_cookie_consent.html.twig' %}
+</body>
+</html>

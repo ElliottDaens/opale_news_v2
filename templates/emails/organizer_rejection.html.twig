@@ -1,0 +1,48 @@
+{#
+emails/organizer_rejection.html.twig
+
+QUOI : Notification HTML — proposition refusée par la modération.
+
+COMMENT : Variables `event`, `reason` (motif saisi par l’admin).
+
+OÙ : `NotificationService::sendOrganizerRejectionNotification`.
+
+POURQUOI : Clôturer le dossier avec un retour explicite à l’organisateur.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Proposition non retenue</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #222;">
+    <h1>Bonjour {{ event.nomOrganisateur }},</h1>
+
+    <p>
+        Nous avons examiné avec attention votre proposition d'événement
+        <strong>« {{ event.titre }} »</strong> prévue le
+        {{ event.startDate|date('d/m/Y') }} à {{ event.ville }}.
+    </p>
+
+    <p>
+        Après étude, nous ne pourrons malheureusement pas la publier en
+        l'état sur Opale News.
+    </p>
+
+    <p><strong>Motif :</strong></p>
+    <blockquote style="margin: 0 0 16px; padding: 12px 16px; background: #f6f6f6; border-left: 4px solid #c0392b; color: #333; white-space: pre-line;">{{ reason }}</blockquote>
+
+    <p>
+        Si vous pensez pouvoir lever ce point, n'hésitez pas à nous répondre
+        directement à ce message : nous pourrons rouvrir le dossier après
+        ajustements.
+    </p>
+
+    <p>
+        Merci pour l'intérêt que vous portez à Opale News, et au plaisir de
+        relayer un prochain événement.
+    </p>
+
+    <p>— L'équipe Opale News</p>
+</body>
+</html>

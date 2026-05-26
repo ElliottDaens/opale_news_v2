@@ -1,0 +1,121 @@
+{#
+admin/edit.html.twig
+
+QUOI : Formulaire admin d’édition d’un événement (même champs que la soumission publique).
+
+COMMENT : `EventSubmissionType` + `form-submission.js` (IA, Places) ; ré-indexation Pinecone si déjà `indexed` ; pas de reCAPTCHA.
+
+OÙ : Route `app_admin_event_edit` (`AdminController::edit`).
+
+POURQUOI : Corriger une fiche avant ou après publication sans passer par l’organisateur.
+#}
+{% extends 'admin/_base.html.twig' %}
+
+{% block title %}Éditer « {{ event.titre }} »{% endblock %}
+
+{% block stylesheets %}
+    {# Charge la feuille du formulaire public : `.btn`, `.btn--ai`, `.form-section`, `.form-row`, `.ai-notice` #}
+    <link rel="stylesheet" href="{{ asset('css/submission.css') }}">
+{% endblock %}
+
+{% block body %}
+    <header class="admin-page-header">
+        <h1>Éditer « {{ event.titre }} »</h1>
+        <p class="admin-page-header__sub">
+            Corrige les informations soumises par l'organisateur.
+            {% if event.indexed %}
+                Cet événement est <strong>déjà indexé</strong> — son vecteur sémantique sera mis à jour à l'enregistrement.
+            {% else %}
+                Cet événement n'est pas encore publié, aucune ré-indexation ne sera déclenchée.
+            {% endif %}
+        </p>
+    </header>
+
+    {#
+      `submission-form` : déclenche le binding de `form-submission.js` (autocomplete + boutons IA).
+      Aucune clé reCAPTCHA n'est passée → la branche reCAPTCHA du JS est court-circuitée.
+    #}
+    {{ form_start(form, {attr: {class: 'submission-form admin-edit-form', novalidate: 'novalidate'}}) }}
+
+        <fieldset class="form-section">
+            <legend>Informations générales</legend>
+            <div class="form-row">
+                {{ form_row(form.titre) }}
+                {{ form_row(form.nomOrganisateur) }}
+            </div>
+            <div class="form-row">
+                {{ form_row(form.emailContact) }}
+                {{ form_row(form.prix) }}
+            </div>
+            <div class="form-row form-row--with-action">
+                {{ form_row(form.categorie) }}
+                <button type="button" class="btn btn--ai" id="btn-suggest-category" data-needs="titre,description">
+                    <span aria-hidden="true">✦</span> L'IA suggère
+                </button>
+            </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+            <legend>Dates &amp; horaires</legend>
+            <div class="form-row">
+                {{ form_row(form.startDate) }}
+                {{ form_row(form.endDate) }}
+            </div>
+            <div class="form-row">
+                {{ form_row(form.startTime) }}
+                {{ form_row(form.endTime) }}
+            </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+            <legend>Lieu</legend>
+
+            <div class="consent-required" role="status">
+                Pour utiliser l'auto-complétion d'adresse, veuillez accepter les cookies tiers (Google Maps).
+                <button type="button" data-cookie-action="reopen">Gérer mes choix</button>
+            </div>
+
+            {{ form_row(form.adresse) }}
+            <div class="form-row">
+                {{ form_row(form.ville) }}
+                {{ form_row(form.codePostal) }}
+            </div>
+            {{ form_widget(form.latitude) }}
+            {{ form_widget(form.longitude) }}
+        </fieldset>
+
+        <fieldset class="form-section">
+            <legend>Description</legend>
+            {{ form_row(form.description) }}
+            <div class="form-actions-inline">
+                <button type="button" class="btn btn--ai" id="btn-improve-desc">
+                    <span aria-hidden="true">✦</span> Améliorer
+                </button>
+                <button type="button" class="btn btn--ai-secondary" id="btn-correct-desc">
+                    <span aria-hidden="true">✓</span> Corriger
+                </button>
+            </div>
+        </fieldset>
+
+        <div class="form-footer">
+            <a href="{{ path('app_admin_events') }}" class="btn btn--ghost">Annuler</a>
+            <button type="submit" class="btn btn--primary">Enregistrer les modifications</button>
+        </div>
+
+    {{ form_end(form) }}
+
+    {#
+      Config pour `form-submission.js` :
+      - `recaptchaSiteKey` omise → la branche reCAPTCHA du JS est sautée (l'admin est authentifié, pas d'anti-spam ici).
+      - `gmapsApiKey` permet l'injection conditionnelle de Google Places via le bandeau cookies.
+    #}
+    <script>
+        window.OPALE_CONFIG = {
+            gmapsApiKey: {{ gmaps_api_key|json_encode|raw }},
+            gmapsCallback: 'initSubmissionMaps',
+        };
+    </script>
+    <script src="{{ asset('js/form-submission.js') }}" defer></script>
+
+    {% include '_partials/_cookie_consent.html.twig' %}
+{% endblock %}

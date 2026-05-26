@@ -1,0 +1,81 @@
+# monolog.yaml
+#
+# QUOI : Canaux et handlers Monolog par environnement (fichier, stderr, fingers_crossed en prod).
+#
+# COMMENT : Canal `deprecation` dédié ; en dev logs fichier + stderr pour Docker ; en prod agrégation erreurs.
+#
+# OÙ : Bundle Monolog — logs dans `var/log/`.
+#
+# POURQUOI : Traçabilité applicative et visibilité immédiate dans `docker logs`.
+
+monolog:
+    channels:
+        - deprecation # Deprecations are logged in the dedicated "deprecation" channel when it exists
+
+when@dev:
+    monolog:
+        handlers:
+            # Fichier debug global : tout y va sauf bruit "event".
+            main:
+                type: stream
+                path: "%kernel.logs_dir%/%kernel.environment%.log"
+                level: debug
+                channels: ["!event"]
+            # Sortie standard d'erreur : remontée immédiate dans `docker logs` du conteneur PHP.
+            stderr:
+                type: stream
+                path: "php://stderr"
+                level: debug
+                formatter: monolog.formatter.line
+                channels: ["!event", "!doctrine"]
+            # Console Symfony : les contextes PSR-3 (placeholders + tableaux) sont rendus.
+            console:
+                type: console
+                process_psr_3_messages: true
+                channels: ["!event", "!doctrine", "!console"]
+            # Fichier dédié aux appels HTTP sortants (Gemini, Pinecone, etc.).
+            # Permet un `tail -f var/log/http_client.log` ciblé en cas d'erreur IA / embedding.
+            http_client:
+                type: stream
+                path: "%kernel.logs_dir%/http_client.log"
+                level: debug
+                channels: [http_client]
+
+when@test:
+    monolog:
+        handlers:
+            main:
+                type: fingers_crossed
+                action_level: error
+                handler: nested
+                excluded_http_codes: [404, 405]
+                channels: ["!event"]
+            nested:
+                type: stream
+                path: "%kernel.logs_dir%/%kernel.environment%.log"
+                level: debug
+
+when@prod:
+    monolog:
+        handlers:
+            # Handler applicatif : rotation quotidienne, 10 fichiers max conservés sur le disque du conteneur.
+            # Niveau "error" pour ne capter que les vraies anomalies (exceptions Pinecone, erreurs HTTP Gemini,
+            # échecs du Cron de purge, abus rate-limiter dans HomeController::search) sans bruit info/notice.
+            main:
+                type: rotating_file
+                path: "%kernel.logs_dir%/%kernel.environment%.log"
+                level: error
+                max_files: 10
+                channels: ["!event", "!deprecation"]
+                formatter: monolog.formatter.json
+            console:
+                type: console
+                process_psr_3_messages: false
+                channels: ["!event", "!doctrine"]
+            # Les dépréciations restent isolées pour ne pas polluer le log d'erreurs principal.
+            deprecation:
+                type: rotating_file
+                path: "%kernel.logs_dir%/%kernel.environment%.deprecations.log"
+                max_files: 10
+                channels: [deprecation]
+                formatter: monolog.formatter.json

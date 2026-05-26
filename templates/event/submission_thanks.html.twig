@@ -1,0 +1,52 @@
+{#
+event/submission_thanks.html.twig
+
+QUOI : Page de confirmation après envoi réussi du formulaire de proposition.
+
+COMMENT : Statique ; liens retour accueil ou nouvelle proposition.
+
+OÙ : Redirection post-soumission contrôleur.
+
+POURQUOI : Rassurer l’utilisateur et fermer le parcours sans ambiguïté.
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merci ! — Opale News</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/submission.css') }}">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <a href="{{ path('app_home') }}" class="logo">
+                <span class="logo-mark" aria-hidden="true">◐</span>
+                <span class="logo-text">Opale News</span>
+            </a>
+            <p class="tagline">L'agenda local de la Côte d'Opale</p>
+        </div>
+    </header>
+
+    <main class="container">
+        {# Message de succès + actions #}
+        <div class="thanks-card">
+            <div class="thanks-icon" aria-hidden="true">✓</div>
+            <h1>Événement reçu, merci&nbsp;!</h1>
+            <p class="thanks-message">
+                Votre proposition a bien été enregistrée. Elle sera <strong>vérifiée par notre
+                équipe</strong>, puis publiée sur le site (généralement sous 48&nbsp;h).
+            </p>
+            <p class="thanks-message thanks-message--small">
+                Vous recevrez un message à l'adresse email indiquée si votre événement est validé ou
+                si nous avons besoin de précisions.
+            </p>
+            <div class="thanks-actions">
+                <a href="{{ path('app_home') }}" class="btn btn--primary">Retour à l'agenda</a>
+                <a href="{{ path('app_event_submit') }}" class="btn btn--ghost">Proposer un autre événement</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,148 @@
+# compose.prod.yaml
+#
+# QUOI : Stack production — Caddy (TLS), PHP-FPM, cron Symfony, PostgreSQL isolé.
+#
+# COMMENT : Ancre `x-app-env` ; volumes `app_var`, `app_uploads`, `caddy_data` ; healthchecks ; DB sans port public.
+#
+# OÙ : `docker compose -f compose.prod.yaml --env-file .env.prod` ou `scripts/deploy.sh`.
+#
+# POURQUOI : Déploiement reproductible, séparation web / batch / TLS.
+#
+# Démarrage : docker compose -f compose.prod.yaml --env-file .env.prod up -d --build
+
+name: opale-news-prod
+
+x-app-env: &app-env
+  APP_ENV: prod
+  APP_DEBUG: 0
+  APP_SECRET: ${APP_SECRET:?APP_SECRET manquant}
+  DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}?serverVersion=${POSTGRES_VERSION:-16}&charset=utf8
+  SITE_DOMAIN: ${SITE_DOMAIN:?SITE_DOMAIN manquant}
+  DEFAULT_URI: https://${SITE_DOMAIN}
+  PINECONE_API_KEY: ${PINECONE_API_KEY:?PINECONE_API_KEY manquant}
+  PINECONE_INDEX_URL: ${PINECONE_INDEX_URL:?PINECONE_INDEX_URL manquant}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:?GEMINI_API_KEY manquant}
+  GMAPS_API_KEY: ${GMAPS_API_KEY:?GMAPS_API_KEY manquant}
+  RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:?RECAPTCHA_SITE_KEY manquant}
+  RECAPTCHA_SECRET_KEY: ${RECAPTCHA_SECRET_KEY:?RECAPTCHA_SECRET_KEY manquant}
+  MAILER_DSN: ${MAILER_DSN:-null://null}
+  TRUSTED_PROXIES: 127.0.0.1,REMOTE_ADDR
+
+services:
+  # Workers HTTP — image `prod`, FPM :9000.
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    image: opale-news:prod
+    restart: unless-stopped
+    init: true
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+    volumes:
+      - app_var:/var/www/html/var
+      - app_uploads:/var/www/html/public/uploads
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "cgi-fcgi", "-bind", "-connect", "127.0.0.1:9000"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # TLS + assets + FastCGI.
+  caddy:
+    build:
+      context: .
+      dockerfile: docker/caddy/Dockerfile
+      args:
+        OPALE_IMAGE: opale-news:prod
+    image: opale-news:caddy
+    restart: unless-stopped
+    depends_on:
+      php:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?SITE_DOMAIN manquant}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL manquant}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - app_uploads:/var/www/html/public/uploads:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Jobs planifiés (`docker/cron/crontab`).
+  cron:
+    build:
+      context: .
+      dockerfile: docker/cron/Dockerfile
+    image: opale-news:cron
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      php:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+    volumes:
+      - app_var:/var/www/html/var
+      - app_uploads:/var/www/html/public/uploads
+      - ./docker/cron/crontab:/etc/cron.d/opale-news:ro
+    networks:
+      - backend
+
+  # Postgres — volume + backups ; réseau interne uniquement.
+  database:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB manquant}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER manquant}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - database_data:/var/lib/postgresql/data
+      - ./scripts/backup:/backup
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # Aucun port publié : la base reste isolée du monde extérieur.
+
+volumes:
+  database_data:
+    driver: local
+  app_var:
+    driver: local
+  app_uploads:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+
+networks:
+  backend:
+    driver: bridge

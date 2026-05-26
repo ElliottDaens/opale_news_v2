@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
+
+# services.yaml
+#
+# QUOI : Définit les services applicatifs : valeurs par défaut d’autowiring et chargement automatique des classes sous `src/`.
+#
+# COMMENT : `_defaults` active l’injection automatique et l’autoconfiguration ; la ressource `App\` enregistre une définition par classe FQCN.
+#
+# OÙ : Point d’entrée du conteneur d’injection de dépendances, complété par `config/packages/*.yaml`.
+#
+# POURQUOI : Centraliser la découverte des services métier sans déclaration manuelle pour chaque classe, tout en laissant la possibilité de surcharges explicites.
+
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'

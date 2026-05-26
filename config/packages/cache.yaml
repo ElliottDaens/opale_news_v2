@@ -1,0 +1,12 @@
+# cache.yaml
+#
+# QUOI : Point d’extension pour pools de cache applicatif Symfony (app, système, adaptateurs Redis/APCu, etc.).
+#
+# COMMENT : Objet vide pour l’instant : les defaults du Framework s’appliquent ; personnaliser `prefix_seed`, `app`, `system`, `pools`, etc. ici si besoin.
+#
+# OÙ : Couche `framework.cache` utilisée par le HttpKernel, Doctrine (en prod via `doctrine.yaml`), rate limiter, etc.
+#
+# POURQUOI : Préparer l’évolution vers backends partagés ou pools dédiés sans toucher au code PHP.
+
+framework:
+    cache: {}

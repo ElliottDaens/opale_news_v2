@@ -1,0 +1,33 @@
+#!/usr/bin/env php
+<?php
+
+use App\Kernel;
+use Symfony\Bundle\FrameworkBundle\Console\Application;
+
+/*
+console
+
+QUOI : Point d'entrée de la ligne de commande Symfony ; amorce le kernel et l'application Console pour exécuter toutes les commandes via `php bin/console`.
+
+COMMENT : Vérifie la présence de `vendor/` et de `vendor/autoload_runtime.php`, charge le runtime Composer, puis retourne une closure qui instancie `Kernel` à partir du contexte (`APP_ENV`, `APP_DEBUG`) et construit `Application` avec ce kernel.
+
+OÙ : Script CLI à la racine du projet (`bin/`), couche entre le terminal et le bundle Framework (commandes console Symfony).
+
+POURQUOI : Fournir l'interface officielle pour migrations, cache, workers, fixtures et toute automatisation sans passer par le serveur HTTP.
+*/
+
+if (!is_dir(dirname(__DIR__).'/vendor')) {
+    throw new LogicException('Dependencies are missing. Try running "composer install".');
+}
+
+if (!is_file(dirname(__DIR__).'/vendor/autoload_runtime.php')) {
+    throw new LogicException('Symfony Runtime is missing. Try running "composer require symfony/runtime".');
+}
+
+require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
+
+return function (array $context) {
+    $kernel = new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+
+    return new Application($kernel);
+};

@@ -1,0 +1,13 @@
+# property_info.yaml
+#
+# QUOI : Active l’extracteur basé sur le constructeur dans le composant PropertyInfo du Framework.
+#
+# COMMENT : `with_constructor_extractor: true` enrichit les métadonnées de propriétés pour Symfony Serializer, Validator, etc.
+#
+# OÙ : Extension `framework.property_info` chargée avec le reste des packages.
+#
+# POURQUOI : Aligner l’inférence de types (y compris constructeur) avec les conventions PHP 8+ du projet.
+
+framework:
+    property_info:
+        with_constructor_extractor: true

@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
+
+# routes.yaml
+#
+# QUOI : Route principale qui délègue l’import des contrôleurs au loader de routing Symfony.
+#
+# COMMENT : `resource: routing.controllers` relie aux attributs/annotations `#[Route]` et autres définitions issues du bundle Framework.
+#
+# OÙ : Entrée du sous-système de routing, chargée avec les autres imports du Kernel.
+#
+# POURQUOI : Éviter de dupliquer les routes déjà déclarées côté contrôleurs et garder une config minimale.
+
+controllers:
+    resource: routing.controllers

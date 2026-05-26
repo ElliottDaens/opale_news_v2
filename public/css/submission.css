@@ -1,0 +1,461 @@
+/*
+submission.css
+
+QUOI : Parcours de soumission d’événement, page de remerciement et modale de recadrage d’images.
+
+COMMENT : Fieldsets, grilles, boutons (variantes IA), flashes, dialogue cropper, masquage du badge reCAPTCHA.
+
+OÙ : Formulaire public et vues « merci » ; utilisé avec `form-submission.js` et Cropper.
+
+POURQUOI : Guider un formulaire long (fichiers, IA) avec un retour visuel clair et un affichage cohérent des mentions légales.
+*/
+
+
+.submission-container {
+    max-width: 880px;
+    padding: var(--space-md);
+    padding-bottom: var(--space-xl);
+}
+
+.back-link {
+    display: inline-block;
+    margin: var(--space-md) 0;
+    color: var(--c-mer);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.back-link:hover {
+    color: var(--c-marine);
+    text-decoration: underline;
+}
+
+.submission-container h1 {
+    margin: 0 0 var(--space-xs);
+    color: var(--c-marine);
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
+}
+
+.submission-intro {
+    margin: 0 0 var(--space-lg);
+    color: var(--c-texte-doux);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.submission-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.form-section {
+    background-color: var(--c-blanc);
+    border: 1px solid var(--c-bordure);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    margin: 0;
+    box-shadow: var(--shadow-xs);
+    transition: box-shadow var(--duration-base) var(--ease-out),
+                border-color var(--duration-base) var(--ease-out);
+}
+
+.form-section:focus-within {
+    box-shadow: var(--shadow-sm);
+    border-color: var(--c-mer-clair);
+}
+
+.form-section legend {
+    padding: 0 var(--space-xs);
+    font-weight: 700;
+    color: var(--c-marine);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+}
+
+.form-row:last-child {
+    margin-bottom: 0;
+}
+
+@media (min-width: 720px) {
+    .form-row {
+        grid-template-columns: 1fr 1fr;
+    }
+    .form-row--with-action {
+        grid-template-columns: 1fr auto;
+        align-items: end;
+    }
+}
+
+.submission-form label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--c-marine);
+}
+
+.submission-form .required label::after,
+.submission-form label.required::after {
+    content: ' *';
+    color: var(--c-corail);
+}
+
+.submission-form input[type="text"],
+.submission-form input[type="email"],
+.submission-form input[type="date"],
+.submission-form input[type="time"],
+.submission-form input[type="file"],
+.submission-form select,
+.submission-form textarea {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--c-texte);
+    background-color: var(--c-blanc);
+    border: 1.5px solid var(--c-bordure);
+    border-radius: var(--radius-sm);
+    outline: none;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
+                background-color var(--duration-fast) var(--ease-out);
+}
+
+.submission-form input:hover,
+.submission-form select:hover,
+.submission-form textarea:hover {
+    border-color: var(--c-mer-clair);
+}
+
+.submission-form input:focus,
+.submission-form select:focus,
+.submission-form textarea:focus {
+    border-color: var(--c-mer);
+    box-shadow: 0 0 0 3px var(--c-focus);
+}
+
+.submission-form textarea {
+    resize: vertical;
+    min-height: 8rem;
+}
+
+.submission-form .form-help {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--c-texte-doux);
+}
+
+.submission-form ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.3rem 0 0;
+    font-size: 0.8rem;
+    color: var(--c-corail);
+}
+
+.honeypot-field {
+    position: absolute !important;
+    left: -9999px !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden;
+}
+
+.form-hint {
+    margin: 0 0 var(--space-sm);
+    font-size: 0.8rem;
+    color: var(--c-texte-doux);
+    font-style: italic;
+}
+
+.image-uploader {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.image-preview {
+    margin-top: 0.5rem;
+    min-height: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background-color: var(--c-sable-clair);
+}
+
+.image-preview img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    font-weight: 600;
+    border: 1.5px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: var(--shadow-xs);
+    transition: background-color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-xs);
+}
+
+.btn--primary {
+    background-color: var(--c-marine);
+    color: var(--c-blanc);
+    border-color: var(--c-marine);
+}
+
+.btn--primary:hover {
+    background-color: var(--c-mer);
+    border-color: var(--c-mer);
+    box-shadow: 0 6px 20px rgba(10, 61, 98, 0.25);
+}
+
+.btn--ghost {
+    background-color: transparent;
+    color: var(--c-texte-doux);
+    border-color: var(--c-bordure);
+    box-shadow: none;
+}
+
+.btn--ghost:hover {
+    color: var(--c-marine);
+    border-color: var(--c-mer);
+    background-color: rgba(30, 96, 145, 0.04);
+    box-shadow: none;
+}
+
+.btn--ai {
+    background-color: var(--c-corail);
+    color: var(--c-blanc);
+    border-color: var(--c-corail);
+    font-size: 0.8rem;
+}
+
+.btn--ai:hover {
+    background-color: var(--c-corail-fonce);
+    border-color: var(--c-corail-fonce);
+    box-shadow: 0 6px 18px rgba(224, 120, 86, 0.30);
+}
+
+.btn--ai-secondary {
+    background-color: transparent;
+    color: var(--c-mer);
+    border-color: var(--c-mer);
+    font-size: 0.8rem;
+    box-shadow: none;
+}
+
+.btn--ai-secondary:hover {
+    background-color: var(--c-mer);
+    color: var(--c-blanc);
+}
+
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.form-actions-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    align-items: center;
+}
+
+.ai-notice {
+    flex-basis: 100%;
+    margin-top: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    animation: ai-notice-in 0.2s ease;
+}
+
+.ai-notice--info {
+    background-color: rgba(30, 96, 145, 0.10);
+    color: var(--c-marine);
+    border-left: 3px solid var(--c-mer);
+}
+
+.ai-notice--warning {
+    background-color: #fff4e0;
+    color: #8b5e00;
+    border-left: 3px solid #d18b00;
+}
+
+.ai-notice--error {
+    background-color: #fbe9e7;
+    color: #8b1c1c;
+    border-left: 3px solid var(--c-corail);
+}
+
+@keyframes ai-notice-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.form-footer {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: flex-end;
+    padding-top: var(--space-md);
+}
+
+.flash {
+    padding: var(--space-sm);
+    margin-bottom: var(--space-md);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    border-left: 4px solid;
+}
+
+.flash--success {
+    background-color: #e8f5e9;
+    color: #1b5e20;
+    border-color: #2e7d32;
+}
+
+.flash--error {
+    background-color: #fbe9e7;
+    color: #b71c1c;
+    border-color: var(--c-corail);
+}
+
+.submission-legal {
+    margin-top: var(--space-md);
+    font-size: 0.75rem;
+    color: var(--c-texte-doux);
+    text-align: center;
+}
+
+.submission-legal a {
+    color: var(--c-mer);
+    text-decoration: none;
+}
+
+
+.cropper-modal {
+    padding: var(--space-md);
+    border: none;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    max-width: 90vw;
+    width: 700px;
+}
+
+.cropper-modal::backdrop {
+    background-color: rgba(10, 61, 98, 0.6);
+}
+
+.cropper-modal__title {
+    margin: 0 0 var(--space-sm);
+    color: var(--c-marine);
+}
+
+.cropper-modal__canvas {
+    max-height: 60vh;
+    overflow: hidden;
+    background-color: #222;
+    border-radius: var(--radius-sm);
+}
+
+.cropper-modal__canvas img {
+    display: block;
+    max-width: 100%;
+}
+
+.cropper-modal__actions {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: flex-end;
+    margin-top: var(--space-md);
+}
+
+
+.thanks-card {
+    max-width: 580px;
+    margin: var(--space-xl) auto;
+    padding: var(--space-xl) var(--space-lg);
+    text-align: center;
+    background-color: var(--c-blanc);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+}
+
+.thanks-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 4rem;
+    height: 4rem;
+    margin-bottom: var(--space-md);
+    background-color: #2e7d32;
+    color: var(--c-blanc);
+    border-radius: 50%;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.thanks-card h1 {
+    margin: 0 0 var(--space-sm);
+    color: var(--c-marine);
+}
+
+.thanks-message {
+    margin: 0 0 var(--space-sm);
+    line-height: 1.6;
+    color: var(--c-texte);
+}
+
+.thanks-message--small {
+    font-size: 0.9rem;
+    color: var(--c-texte-doux);
+}
+
+.thanks-actions {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: var(--space-md);
+}
+
+.grecaptcha-badge {
+    visibility: hidden;
+}
