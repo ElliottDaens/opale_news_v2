@@ -293,6 +293,62 @@ final class EventRepository extends ServiceEntityRepository
     }
 
     /**
+     * Événements publics d'une catégorie donnée, excluant un id (fallback aux suggestions similaires).
+     *
+     * @return Event[]
+     */
+    public function findRelatedByCategory(string $categorie, int $excludeId, int $limit = 3): array
+    {
+        return $this->createQueryBuilder('e')
+            ->where('e.status = :status')
+            ->andWhere('e.categorie = :cat')
+            ->andWhere('e.id != :excluded')
+            ->setParameter('status', EventStatus::Approved)
+            ->setParameter('cat', $categorie)
+            ->setParameter('excluded', $excludeId)
+            ->orderBy('e.startDate', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Événements publics d'une ville (page ville).
+     *
+     * @return Event[]
+     */
+    public function findByVille(string $ville, int $limit = 50): array
+    {
+        return $this->createQueryBuilder('e')
+            ->where('e.status = :status')
+            ->andWhere('LOWER(e.ville) = :ville')
+            ->setParameter('status', EventStatus::Approved)
+            ->setParameter('ville', mb_strtolower($ville))
+            ->orderBy('e.startDate', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Liste des villes distinctes parmi les événements publiés (pour sitemap + listing).
+     *
+     * @return string[]
+     */
+    public function findDistinctCities(): array
+    {
+        $rows = $this->createQueryBuilder('e')
+            ->select('DISTINCT e.ville AS ville')
+            ->where('e.status = :status')
+            ->setParameter('status', EventStatus::Approved)
+            ->orderBy('e.ville', 'ASC')
+            ->getQuery()
+            ->getArrayResult();
+
+        return array_values(array_filter(array_map(static fn (array $row): string => (string) $row['ville'], $rows)));
+    }
+
+    /**
      * @return Event[]
      */
     public function findExpiredEvents(int $daysGrace = 2): array

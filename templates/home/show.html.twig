@@ -378,6 +378,56 @@ POURQUOI : Référencement Google Events, partages riches Facebook/X/LinkedIn, f
                 </section>
             </aside>
         </div>
+
+        {# ---------- Suggestions similaires (Pinecone topK ou fallback même catégorie) ---------- #}
+        {% if similarEvents is defined and similarEvents|length > 0 %}
+            <section class="event-similar" aria-label="Événements similaires">
+                <div class="event-similar__header">
+                    <h2 class="event-similar__title">Vous aimerez aussi</h2>
+                    <p class="event-similar__subtitle">Sélectionnés par notre IA selon vos centres d'intérêt</p>
+                </div>
+
+                <div class="events-grid event-similar__grid">
+                    {% for similar in similarEvents %}
+                        <a href="{{ path('app_event_show', { id: similar.id, slug: similar.slug }) }}" class="event-card-link">
+                            <article class="event-card">
+                                <div class="event-card__header">
+                                    <span class="event-card__category">{{ similar.categorie }}</span>
+                                    <span class="event-card__date">{{ similar.formatDateRange }}</span>
+                                </div>
+                                <h3 class="event-card__title">{{ similar.titre }}</h3>
+                                <p class="event-card__ville">
+                                    <svg class="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M12 22s-8-7.58-8-13a8 8 0 0 1 16 0c0 5.42-8 13-8 13z"/>
+                                        <circle cx="12" cy="9" r="3"/>
+                                    </svg>
+                                    <span>{{ similar.ville }}</span>
+                                </p>
+                                <p class="event-card__description">{{ similar.description }}</p>
+                            </article>
+                        </a>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+
+        {# ---------- Navigation contextuelle : voir tout par catégorie / ville ---------- #}
+        <nav class="event-context-nav" aria-label="Voir plus d'événements">
+            <a class="event-context-nav__link" href="{{ path('app_category_show', { slug: event.categorieSlug }) }}">
+                <span class="event-context-nav__icon" aria-hidden="true">🎯</span>
+                <span class="event-context-nav__text">
+                    <span class="event-context-nav__label">Voir plus de</span>
+                    <strong>{{ event.categorie }}</strong>
+                </span>
+            </a>
+            <a class="event-context-nav__link" href="{{ path('app_city_show', { slug: event.villeSlug }) }}">
+                <span class="event-context-nav__icon" aria-hidden="true">📍</span>
+                <span class="event-context-nav__text">
+                    <span class="event-context-nav__label">Tous les événements à</span>
+                    <strong>{{ event.ville }}</strong>
+                </span>
+            </a>
+        </nav>
     </main>
 
     {# ---------- Pied de page ---------- #}

@@ -4,6 +4,28 @@
             <p>&copy; {{ "now"|date('Y') }} Opale News</p>
             <p class="site-footer__tagline">L'agenda de la Côte d'Opale — Pas-de-Calais</p>
         </div>
+
+        <nav class="site-footer__columns" aria-label="Navigation thématique">
+            <div class="site-footer__column">
+                <h3 class="site-footer__heading">Catégories</h3>
+                <ul class="site-footer__list">
+                    <li><a href="{{ path('app_category_show', { slug: 'musique' }) }}">Musique</a></li>
+                    <li><a href="{{ path('app_category_show', { slug: 'brocante' }) }}">Brocantes</a></li>
+                    <li><a href="{{ path('app_category_show', { slug: 'festival' }) }}">Festivals</a></li>
+                    <li><a href="{{ path('app_category_show', { slug: 'famille' }) }}">Famille</a></li>
+                </ul>
+            </div>
+            <div class="site-footer__column">
+                <h3 class="site-footer__heading">Côte d'Opale</h3>
+                <ul class="site-footer__list">
+                    <li><a href="{{ path('app_city_show', { slug: 'calais' }) }}">Calais</a></li>
+                    <li><a href="{{ path('app_city_show', { slug: 'boulogne-sur-mer' }) }}">Boulogne-sur-Mer</a></li>
+                    <li><a href="{{ path('app_city_show', { slug: 'berck' }) }}">Berck</a></li>
+                    <li><a href="{{ path('app_city_show', { slug: 'le-touquet' }) }}">Le Touquet</a></li>
+                </ul>
+            </div>
+        </nav>
+
         <nav class="site-footer__links" aria-label="Liens du pied de page">
             <a href="{{ path('app_event_submit') }}">Proposer un événement</a>
             <a href="{{ path('app_legal_notice') }}">Mentions légales</a>

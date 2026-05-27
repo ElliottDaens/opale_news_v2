@@ -44,6 +44,11 @@ POURQUOI : Cohérence UI modération / corbeille / dashboard.
                 <span class="admin-nav__icon" aria-hidden="true">🗑️</span>
                 <span class="admin-nav__label">Corbeille</span>
             </a>
+            {% set logsRoute = app.request.attributes.get('_route') %}
+            <a href="{{ path('app_admin_logs') }}" class="admin-nav__link {{ logsRoute in ['app_admin_logs', 'app_admin_logs_http'] ? 'is-active' : '' }}">
+                <span class="admin-nav__icon" aria-hidden="true">📜</span>
+                <span class="admin-nav__label">Logs</span>
+            </a>
         </nav>
 
         <div class="admin-sidebar__footer">

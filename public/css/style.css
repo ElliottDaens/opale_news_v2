@@ -161,8 +161,8 @@ body > main {
     color: var(--c-blanc);
     padding: 0.85rem 0;
     box-shadow: var(--shadow-sm);
-    transition: padding var(--duration-base) var(--ease-out),
-                box-shadow var(--duration-base) var(--ease-out);
+    transition: box-shadow var(--duration-base) var(--ease-out),
+                background var(--duration-base) var(--ease-out);
 }
 
 @media (min-width: 640px) {
@@ -171,9 +171,10 @@ body > main {
     }
 }
 
+/* NE PAS modifier la hauteur (padding/min-height) ici : un header sticky qui
+   change de taille au scroll fait osciller la position de défilement autour du
+   seuil et provoque un flicker. Seuls les effets visuels sont autorisés. */
 .site-header.is-scrolled {
-    padding-top: 0.6rem;
-    padding-bottom: 0.6rem;
     box-shadow: var(--shadow-md);
     background: linear-gradient(135deg, rgba(10, 61, 98, 0.92) 0%, rgba(30, 96, 145, 0.92) 100%);
     -webkit-backdrop-filter: saturate(140%) blur(8px);
@@ -523,6 +524,142 @@ body > main {
 .toolbar-pill--geo.is-error {
     color: var(--c-corail);
     border-color: var(--c-corail);
+}
+
+/* ===== Saisie manuelle d'adresse (popover) =====
+   Wrapper relatif pour ancrer le panneau sous le bouton ; styles compacts cohérents
+   avec les autres pills de la toolbar. */
+.geo-manual {
+    position: relative;
+    display: inline-flex;
+}
+
+.toolbar-pill--geo-edit .toolbar-pill__icon {
+    stroke-width: 2;
+}
+
+.geo-manual.is-open .toolbar-pill--geo-edit {
+    background-color: var(--c-marine);
+    border-color: var(--c-marine);
+    color: var(--c-blanc);
+}
+
+.geo-manual__panel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    z-index: 30;
+    width: min(360px, calc(100vw - 2rem));
+    background-color: var(--c-blanc);
+    border: 1px solid var(--c-bordure);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-sm);
+    animation: toolbar-pill-in 0.18s var(--ease-out);
+}
+
+.geo-manual__label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--c-texte-doux);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 0.4rem;
+}
+
+.geo-manual__input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.geo-manual__input {
+    flex: 1;
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    font: inherit;
+    font-size: 0.92rem;
+    color: var(--c-texte);
+    background-color: var(--c-blanc);
+    border: 1.5px solid var(--c-bordure);
+    border-radius: var(--radius-sm);
+    outline: none;
+    transition: border-color var(--duration-fast) var(--ease-out),
+                box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.geo-manual__input:focus {
+    border-color: var(--c-mer);
+    box-shadow: 0 0 0 3px rgba(30, 96, 145, 0.15);
+}
+
+.geo-manual__spinner {
+    position: absolute;
+    right: 0.6rem;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--c-bordure);
+    border-top-color: var(--c-mer);
+    border-radius: 50%;
+    animation: geo-manual-spin 0.7s linear infinite;
+}
+
+@keyframes geo-manual-spin {
+    to { transform: rotate(360deg); }
+}
+
+.geo-manual__suggestions {
+    list-style: none;
+    margin: 0.4rem 0 0;
+    padding: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--c-bordure);
+    border-radius: var(--radius-sm);
+    background-color: var(--c-blanc);
+}
+
+.geo-manual__suggestion {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.88rem;
+    color: var(--c-marine);
+    cursor: pointer;
+    transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.geo-manual__suggestion + .geo-manual__suggestion {
+    border-top: 1px solid var(--c-bordure);
+}
+
+.geo-manual__suggestion svg {
+    flex-shrink: 0;
+    color: var(--c-mer);
+}
+
+.geo-manual__suggestion:hover,
+.geo-manual__suggestion.is-active {
+    background-color: var(--c-sable-clair);
+}
+
+.geo-manual__hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.78rem;
+    color: var(--c-texte-doux);
+}
+
+@media (max-width: 600px) {
+    .geo-manual__panel {
+        position: fixed;
+        top: auto;
+        bottom: 1rem;
+        left: 1rem;
+        right: 1rem;
+        width: auto;
+    }
 }
 
 .toolbar-pill--filters,
@@ -1105,6 +1242,84 @@ body > main {
     border-radius: 50%;
 }
 
+/* Pin "cluster" : utilisé quand plusieurs événements partagent les mêmes coordonnées.
+   On masque le point central blanc (::after) et on affiche le compteur à la place. */
+.home-map-marker--cluster {
+    width: 34px;
+    height: 34px;
+    background: radial-gradient(circle at 35% 30%, var(--c-mer-clair) 0%, var(--c-marine) 100%);
+    box-shadow: 0 6px 18px rgba(10, 61, 98, 0.45);
+}
+
+.home-map-marker--cluster::after {
+    display: none;
+}
+
+.home-map-marker__count {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--c-blanc);
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 2px rgba(10, 61, 98, 0.4);
+}
+
+/* Marqueur « Ma position » : point bleu pulsant, convention universelle. */
+.home-map-user-wrap {
+    background: transparent;
+    border: none;
+}
+
+.home-map-user-marker {
+    position: relative;
+    width: 22px;
+    height: 22px;
+}
+
+.home-map-user-marker__dot {
+    position: absolute;
+    inset: 4px;
+    background: var(--c-mer);
+    border: 3px solid var(--c-blanc);
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(10, 61, 98, 0.45);
+    z-index: 2;
+}
+
+.home-map-user-marker__pulse {
+    position: absolute;
+    inset: 0;
+    background-color: var(--c-mer);
+    border-radius: 50%;
+    opacity: 0.45;
+    transform-origin: center;
+    animation: home-map-user-pulse 2s infinite ease-out;
+    z-index: 1;
+}
+
+@keyframes home-map-user-pulse {
+    0% {
+        transform: scale(0.6);
+        opacity: 0.55;
+    }
+    100% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .home-map-user-marker__pulse {
+        animation: none;
+        opacity: 0.3;
+    }
+}
+
 .home-map-popup-wrap .leaflet-popup-content-wrapper {
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-md);
@@ -1114,6 +1329,10 @@ body > main {
 .home-map-popup-wrap .leaflet-popup-content {
     margin: 0;
     min-width: 200px;
+}
+
+.home-map-popup-wrap--cluster .leaflet-popup-content {
+    min-width: 260px;
 }
 
 .home-map-popup {
@@ -1153,6 +1372,108 @@ body > main {
 
 .home-map-popup__link:hover {
     text-decoration: underline;
+}
+
+/* Popup "cluster" : en-tête + liste d'événements. Le scroll est délégué à Leaflet
+   (option `maxHeight` du bindPopup → classe .leaflet-popup-scrolled) pour que la
+   popup ne dépasse jamais les dimensions de la carte. */
+.home-map-popup--cluster {
+    padding: 0;
+}
+
+.home-map-popup-wrap--cluster .leaflet-popup-scrolled {
+    border-bottom: 1px solid transparent;
+}
+
+.home-map-popup__header {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--c-bordure);
+    background: linear-gradient(180deg, var(--c-sable-clair) 0%, var(--c-blanc) 100%);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.home-map-popup__badge {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 30%, var(--c-corail) 0%, var(--c-corail-fonce) 100%);
+    color: var(--c-blanc);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.8rem;
+    box-shadow: 0 2px 6px rgba(198, 96, 60, 0.35);
+}
+
+.home-map-popup__eyebrow {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-marine);
+    line-height: 1.2;
+}
+
+.home-map-popup--cluster .home-map-popup__meta {
+    margin: 0.1rem 0 0;
+    font-size: 0.78rem;
+    line-height: 1.2;
+}
+
+.home-map-popup-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.home-map-popup-list__item + .home-map-popup-list__item {
+    border-top: 1px solid var(--c-bordure);
+}
+
+.home-map-popup-list__link {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.45rem 0.7rem;
+    text-decoration: none;
+    color: inherit;
+    transition: background-color var(--duration-fast) var(--ease-out);
+}
+
+.home-map-popup-list__link:hover,
+.home-map-popup-list__link:focus-visible {
+    background-color: var(--c-sable-clair);
+    outline: none;
+}
+
+.home-map-popup-list__category {
+    font-size: 0.66rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--c-mer);
+}
+
+.home-map-popup-list__title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--c-marine);
+}
+
+.home-map-popup-list__date {
+    font-size: 0.76rem;
+    color: var(--c-texte-doux);
 }
 
 @media (min-width: 768px) {
@@ -1517,16 +1838,71 @@ body > main {
     text-underline-offset: 2px;
 }
 
+.site-footer__columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    width: 100%;
+}
+
+.site-footer__column h3.site-footer__heading {
+    margin: 0 0 0.5rem;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--c-sable);
+    opacity: 0.95;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.site-footer__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.site-footer__list a {
+    color: var(--c-sable);
+    text-decoration: none;
+    font-size: 0.85rem;
+    opacity: 0.82;
+    transition: opacity var(--duration-fast) var(--ease-out);
+}
+
+.site-footer__list a:hover {
+    opacity: 1;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 @media (min-width: 640px) {
     .site-footer__inner {
         flex-direction: row;
+        flex-wrap: wrap;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-start;
         text-align: left;
     }
 
+    .site-footer__brand {
+        flex: 1 1 200px;
+    }
+
+    .site-footer__columns {
+        flex: 2 1 400px;
+        width: auto;
+    }
+
     .site-footer__links {
-        justify-content: flex-end;
+        flex: 1 1 100%;
+        justify-content: center;
+        margin-top: var(--space-sm);
+        padding-top: var(--space-sm);
+        border-top: 1px solid rgba(245, 233, 212, 0.18);
     }
 }
 
@@ -1546,4 +1922,143 @@ body > main {
     .search-section {
         padding: var(--space-xl) 0 var(--space-lg);
     }
+}
+
+/* ---------- Suggestions similaires (fiche événement) ---------- */
+.event-similar {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--c-bordure);
+}
+
+.event-similar__header {
+    margin-bottom: var(--space-md);
+}
+
+.event-similar__title {
+    margin: 0 0 0.4rem;
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    color: var(--c-marine);
+}
+
+.event-similar__subtitle {
+    margin: 0;
+    color: var(--c-texte-doux);
+    font-size: 0.95rem;
+}
+
+.event-similar__subtitle::before {
+    content: '✨';
+    margin-right: 0.4rem;
+}
+
+.event-similar__grid {
+    margin-top: var(--space-sm);
+}
+
+/* ---------- Navigation contextuelle (fiche événement) ---------- */
+.event-context-nav {
+    margin: var(--space-lg) 0;
+    display: grid;
+    gap: var(--space-sm);
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+    .event-context-nav {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.event-context-nav__link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: linear-gradient(135deg, var(--c-blanc) 0%, var(--c-sable-clair) 100%);
+    border: 1px solid var(--c-bordure);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    text-decoration: none;
+    color: var(--c-texte);
+    transition: transform var(--duration-base) var(--ease-out), box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-base) var(--ease-out);
+}
+
+.event-context-nav__link:hover,
+.event-context-nav__link:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--c-mer-clair);
+}
+
+.event-context-nav__icon {
+    font-size: 1.6rem;
+    flex-shrink: 0;
+}
+
+.event-context-nav__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.event-context-nav__label {
+    font-size: 0.85rem;
+    color: var(--c-texte-doux);
+}
+
+.event-context-nav__text strong {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    color: var(--c-marine);
+}
+
+/* ---------- Pages taxonomie (catégorie / ville) ---------- */
+.taxonomy-page {
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-xl);
+}
+
+.taxonomy-hero {
+    margin: var(--space-md) 0 var(--space-lg);
+    padding: var(--space-lg);
+    background: linear-gradient(135deg, var(--c-marine) 0%, var(--c-mer) 100%);
+    border-radius: var(--radius-lg);
+    color: var(--c-blanc);
+    box-shadow: var(--shadow-md);
+}
+
+.taxonomy-hero__kicker {
+    margin: 0 0 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.8rem;
+    color: var(--c-sable);
+    opacity: 0.9;
+}
+
+.taxonomy-hero__title {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    line-height: 1.15;
+}
+
+.taxonomy-hero__intro {
+    margin: 0 0 var(--space-sm);
+    max-width: 60ch;
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 1.05rem;
+}
+
+.taxonomy-hero__count {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0.4rem 0.9rem;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 500;
 }

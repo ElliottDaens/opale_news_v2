@@ -38,6 +38,13 @@
     const mapToggle = document.getElementById('map-toggle');
     const mapSection = document.getElementById('home-map-section');
     const mapClose = document.getElementById('map-close');
+    const geoManual = document.getElementById('geo-manual');
+    const geoManualToggle = document.getElementById('geo-manual-toggle');
+    const geoManualPanel = document.getElementById('geo-manual-panel');
+    const geoManualInput = document.getElementById('geo-manual-input');
+    const geoManualSuggestions = document.getElementById('geo-manual-suggestions');
+    const geoManualSpinner = document.getElementById('geo-manual-spinner');
+    const geoManualHint = document.getElementById('geo-manual-hint');
 
     if (!searchInput || !primaryGrid) {
         return;
@@ -202,6 +209,12 @@
                 };
                 savePosition(pos);
                 updateGeoUI('active');
+                // Ouvre la carte et y matérialise la position utilisateur : feedback
+                // immédiat « voici où je suis, voici les events autour ».
+                setMapOpen(true);
+                if (window.opaleMap && typeof window.opaleMap.setUserPosition === 'function') {
+                    window.opaleMap.setUserPosition(pos);
+                }
                 memoryCache.clear();
                 activeFilters.page = 1;
                 runSearch(searchInput.value.trim(), { append: false });
@@ -224,6 +237,9 @@
                 userPosition = null;
                 try { sessionStorage.removeItem(GEO_STORAGE_KEY); } catch (_) {}
                 updateGeoUI('idle');
+                if (window.opaleMap && typeof window.opaleMap.clearUserPosition === 'function') {
+                    window.opaleMap.clearUserPosition();
+                }
                 memoryCache.clear();
                 activeFilters.page = 1;
                 runSearch(searchInput.value.trim(), { append: false });
@@ -234,6 +250,23 @@
 
         if (userPosition) {
             updateGeoUI('active');
+            // Restauration depuis sessionStorage : place le marqueur sans forcément
+            // ouvrir la carte (l'utilisateur n'a pas re-cliqué sur Ma position).
+            // L'appel à setUserPosition est différé pour laisser home-map.js s'init.
+            window.addEventListener('load', () => {
+                if (window.opaleMap && typeof window.opaleMap.setUserPosition === 'function') {
+                    window.opaleMap.setUserPosition(userPosition);
+                }
+            }, { once: true });
+            // La grille initiale rendue par Twig est triée par pertinence sans
+            // distance : sans ce refresh, le bouton resterait « actif » mais
+            // l'ordre des cartes ignorerait la position restaurée.
+            // setTimeout(0) : `runSearch` et `memoryCache` sont déclarés plus bas
+            // (const → TDZ), on défère pour que l'IIFE finisse son init d'abord.
+            setTimeout(() => {
+                activeFilters.page = 1;
+                runSearch(searchInput.value.trim(), { append: false });
+            }, 0);
         }
     }
 
@@ -601,6 +634,183 @@
             runSearch(searchInput.value.trim(), { append: true });
         });
     }
+
+    /* ===================== Saisie manuelle d'adresse =====================
+       Popover déclenché par #geo-manual-toggle, autocomplete sur /api/geocode
+       (proxy Google Geocoding côté serveur, clé jamais exposée). Sur sélection,
+       on met à jour `userPosition`, on déplace le marqueur carte, et on relance
+       la recherche pour ramener les events à proximité de la nouvelle position. */
+
+    const GEO_MANUAL_DEBOUNCE_MS = 280;
+    const GEO_MANUAL_MIN_LENGTH = 3;
+    let geoManualDebounceId = null;
+    let geoManualController = null;
+    let geoManualActiveIndex = -1;
+
+    function setGeoManualOpen(open) {
+        if (!geoManualToggle || !geoManualPanel) return;
+        geoManualToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        geoManualPanel.hidden = !open;
+        if (geoManual) {
+            geoManual.classList.toggle('is-open', open);
+        }
+        if (open && geoManualInput) {
+            geoManualInput.focus();
+            geoManualInput.select();
+        }
+    }
+
+    function clearGeoManualSuggestions() {
+        if (!geoManualSuggestions) return;
+        geoManualSuggestions.innerHTML = '';
+        geoManualSuggestions.hidden = true;
+        geoManualActiveIndex = -1;
+    }
+
+    function setGeoManualHint(text) {
+        if (geoManualHint) {
+            geoManualHint.textContent = text;
+            geoManualHint.hidden = !text;
+        }
+    }
+
+    function renderGeoManualSuggestions(suggestions) {
+        if (!geoManualSuggestions) return;
+        if (!Array.isArray(suggestions) || suggestions.length === 0) {
+            clearGeoManualSuggestions();
+            setGeoManualHint('Aucune adresse trouvée — précisez votre recherche.');
+            return;
+        }
+
+        geoManualSuggestions.innerHTML = suggestions.map((s, idx) => `
+            <li role="option" class="geo-manual__suggestion" data-index="${idx}" data-lat="${s.lat}" data-lng="${s.lng}" tabindex="-1">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 22s-8-7.58-8-13a8 8 0 0 1 16 0c0 5.42-8 13-8 13z"/>
+                    <circle cx="12" cy="9" r="3"/>
+                </svg>
+                <span>${escapeHtml(s.label)}</span>
+            </li>
+        `).join('');
+        geoManualSuggestions.hidden = false;
+        geoManualActiveIndex = -1;
+        setGeoManualHint('');
+    }
+
+    function selectGeoManualSuggestion(lat, lng, label) {
+        const pos = { lat: Number(lat), lng: Number(lng), timestamp: Date.now() };
+        if (Number.isNaN(pos.lat) || Number.isNaN(pos.lng)) return;
+
+        savePosition(pos);
+        updateGeoUI('active', `Position définie : ${label}`);
+        setMapOpen(true);
+        if (window.opaleMap && typeof window.opaleMap.setUserPosition === 'function') {
+            window.opaleMap.setUserPosition(pos);
+        }
+        setGeoManualOpen(false);
+        clearGeoManualSuggestions();
+        memoryCache.clear();
+        activeFilters.page = 1;
+        runSearch(searchInput.value.trim(), { append: false });
+    }
+
+    async function fetchGeoManualSuggestions(query) {
+        if (geoManualController) geoManualController.abort();
+        geoManualController = new AbortController();
+        const controller = geoManualController;
+
+        if (geoManualSpinner) geoManualSpinner.hidden = false;
+
+        try {
+            const response = await fetch('/api/geocode?q=' + encodeURIComponent(query), {
+                headers: { 'Accept': 'application/json' },
+                signal: controller.signal,
+            });
+            if (controller.signal.aborted) return;
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const data = await response.json();
+            renderGeoManualSuggestions(data.suggestions || []);
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                clearGeoManualSuggestions();
+                setGeoManualHint('Erreur lors de la recherche d\'adresse.');
+            }
+        } finally {
+            if (geoManualController === controller && geoManualSpinner) {
+                geoManualSpinner.hidden = true;
+            }
+        }
+    }
+
+    if (geoManualToggle) {
+        geoManualToggle.addEventListener('click', () => {
+            const open = geoManualToggle.getAttribute('aria-expanded') === 'true';
+            setGeoManualOpen(!open);
+        });
+    }
+
+    if (geoManualInput) {
+        geoManualInput.addEventListener('input', (event) => {
+            const value = event.target.value.trim();
+            if (geoManualDebounceId) clearTimeout(geoManualDebounceId);
+
+            if (value.length < GEO_MANUAL_MIN_LENGTH) {
+                clearGeoManualSuggestions();
+                setGeoManualHint('Tapez au moins ' + GEO_MANUAL_MIN_LENGTH + ' caractères.');
+                return;
+            }
+
+            geoManualDebounceId = setTimeout(() => fetchGeoManualSuggestions(value), GEO_MANUAL_DEBOUNCE_MS);
+        });
+
+        geoManualInput.addEventListener('keydown', (event) => {
+            if (!geoManualSuggestions || geoManualSuggestions.hidden) return;
+            const items = geoManualSuggestions.querySelectorAll('.geo-manual__suggestion');
+            if (items.length === 0) return;
+
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                geoManualActiveIndex = (geoManualActiveIndex + 1) % items.length;
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                geoManualActiveIndex = (geoManualActiveIndex - 1 + items.length) % items.length;
+            } else if (event.key === 'Enter') {
+                event.preventDefault();
+                const target = geoManualActiveIndex >= 0 ? items[geoManualActiveIndex] : items[0];
+                if (target) {
+                    selectGeoManualSuggestion(target.dataset.lat, target.dataset.lng, target.textContent.trim());
+                }
+                return;
+            } else if (event.key === 'Escape') {
+                setGeoManualOpen(false);
+                return;
+            } else {
+                return;
+            }
+
+            items.forEach((el, idx) => {
+                el.classList.toggle('is-active', idx === geoManualActiveIndex);
+            });
+            if (geoManualActiveIndex >= 0) {
+                items[geoManualActiveIndex].scrollIntoView({ block: 'nearest' });
+            }
+        });
+    }
+
+    if (geoManualSuggestions) {
+        geoManualSuggestions.addEventListener('click', (event) => {
+            const item = event.target.closest('.geo-manual__suggestion');
+            if (!item) return;
+            selectGeoManualSuggestion(item.dataset.lat, item.dataset.lng, item.textContent.trim());
+        });
+    }
+
+    // Fermer le popover si on clique en dehors.
+    document.addEventListener('click', (event) => {
+        if (!geoManual || geoManual.classList.contains('is-open') === false) return;
+        if (!geoManual.contains(event.target)) {
+            setGeoManualOpen(false);
+        }
+    });
 
     let debounceId;
     searchInput.addEventListener('input', (event) => {

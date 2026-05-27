@@ -39,12 +39,25 @@
 
     const header = document.querySelector('.site-header');
     if (header) {
+        // Hystérésis : seuils distincts pour activer/désactiver afin d'éviter
+        // l'oscillation quand le changement de padding modifie la hauteur du
+        // header sticky (et donc la position de scroll) au pixel près du seuil.
+        const ENTER = 12;
+        const EXIT = 2;
+        let scrolled = false;
         let ticking = false;
         const onScroll = () => {
             if (ticking) return;
             ticking = true;
             requestAnimationFrame(() => {
-                header.classList.toggle('is-scrolled', window.scrollY > 8);
+                const y = window.scrollY;
+                if (!scrolled && y > ENTER) {
+                    scrolled = true;
+                    header.classList.add('is-scrolled');
+                } else if (scrolled && y < EXIT) {
+                    scrolled = false;
+                    header.classList.remove('is-scrolled');
+                }
                 ticking = false;
             });
         };

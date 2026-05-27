@@ -94,4 +94,34 @@ final class PineconeService
             $data['matches'] ?? [],
         );
     }
+
+    /**
+     * Voisins sémantiques d'un vecteur déjà indexé (sans re-embedding).
+     *
+     * @return array<array{id: int, score: float}>
+     */
+    public function queryById(string $id, int $limit = 5): array
+    {
+        $response = $this->httpClient->request('POST', $this->indexUrl . '/query', [
+            'headers' => [
+                'Api-Key' => $this->apiKey,
+                'X-Pinecone-API-Version' => '2024-07',
+            ],
+            'json' => [
+                'id' => $id,
+                'topK' => $limit,
+                'includeValues' => false,
+            ],
+        ]);
+
+        $data = $response->toArray();
+
+        return array_map(
+            static fn (array $match): array => [
+                'id' => (int) $match['id'],
+                'score' => (float) $match['score'],
+            ],
+            $data['matches'] ?? [],
+        );
+    }
 }

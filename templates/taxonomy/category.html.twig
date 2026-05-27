@@ -1,0 +1,22 @@
+{#
+taxonomy/category.html.twig
+
+QUOI : Page publique listant tous les événements approuvés d'une catégorie donnée.
+
+COMMENT : Étend `_listing_base.html.twig`, qui fournit le hero et la grille. Variable `category` (libellé) et
+`events` (Event[]) injectées par `TaxonomyController::category`.
+
+POURQUOI : Renforcer le SEO longue traîne (« concerts Côte d'Opale », « brocantes Pas-de-Calais ») et offrir
+une porte d'entrée thématique au visiteur.
+#}
+{% extends 'taxonomy/_listing_base.html.twig' %}
+
+{% block taxonomy_title %}{{ category }} sur la Côte d'Opale — Opale News{% endblock %}
+
+{% block taxonomy_meta_description %}Tous les événements « {{ category }} » sur la Côte d'Opale : dates, lieux, infos pratiques. {{ totalEvents }} sélection{{ totalEvents > 1 ? 's' : '' }} actuellement.{% endblock %}
+
+{% block taxonomy_kicker %}Catégorie{% endblock %}
+
+{% block taxonomy_heading %}{{ category }} sur la Côte d'Opale{% endblock %}
+
+{% block taxonomy_intro %}Découvrez tous les événements « {{ category }} » à venir sur la Côte d'Opale (Pas-de-Calais).{% endblock %}

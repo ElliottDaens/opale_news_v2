@@ -1,0 +1,22 @@
+{#
+taxonomy/city.html.twig
+
+QUOI : Page publique listant tous les événements approuvés d'une ville donnée.
+
+COMMENT : Étend `_listing_base.html.twig`. Variable `city` (libellé) et `events` injectées par
+`TaxonomyController::city`.
+
+POURQUOI : SEO local (« événements Calais », « que faire à Boulogne-sur-Mer ») et navigation
+géographique depuis la fiche d'un événement.
+#}
+{% extends 'taxonomy/_listing_base.html.twig' %}
+
+{% block taxonomy_title %}Que faire à {{ city }} — Opale News{% endblock %}
+
+{% block taxonomy_meta_description %}Agenda complet des événements à {{ city }} sur la Côte d'Opale : concerts, brocantes, expositions, sport, famille. {{ totalEvents }} sélection{{ totalEvents > 1 ? 's' : '' }} actuellement.{% endblock %}
+
+{% block taxonomy_kicker %}Ville{% endblock %}
+
+{% block taxonomy_heading %}Que faire à {{ city }} ?{% endblock %}
+
+{% block taxonomy_intro %}Tous les événements actuellement programmés à {{ city }} et alentours.{% endblock %}

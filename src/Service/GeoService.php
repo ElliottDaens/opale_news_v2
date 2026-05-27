@@ -57,9 +57,58 @@ final class GeoService
      */
     public function geocodeAddress(string $address): ?array
     {
+        $results = $this->geocodeRaw($address, 1);
+        if ($results === []) {
+            return null;
+        }
+
+        $location = $results[0]['geometry']['location'] ?? null;
+        if (!is_array($location) || !isset($location['lat'], $location['lng'])) {
+            return null;
+        }
+
+        return [
+            'lat' => (float) $location['lat'],
+            'lng' => (float) $location['lng'],
+        ];
+    }
+
+    /**
+     * Renvoie jusqu'à `$limit` suggestions d'adresse pour un input partiel ;
+     * destiné au champ « Saisir mon adresse » côté front.
+     *
+     * @return list<array{label: string, lat: float, lng: float}>
+     */
+    public function geocodeSuggestions(string $address, int $limit = 5): array
+    {
+        $results = $this->geocodeRaw($address, $limit);
+        $suggestions = [];
+        foreach ($results as $result) {
+            $location = $result['geometry']['location'] ?? null;
+            $label = $result['formatted_address'] ?? null;
+            if (!is_array($location) || !isset($location['lat'], $location['lng']) || !is_string($label)) {
+                continue;
+            }
+            $suggestions[] = [
+                'label' => $label,
+                'lat' => (float) $location['lat'],
+                'lng' => (float) $location['lng'],
+            ];
+        }
+
+        return $suggestions;
+    }
+
+    /**
+     * Appel mutualisé vers l'API Google Geocoding : retourne les `results` bruts (max `$limit`).
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function geocodeRaw(string $address, int $limit): array
+    {
         $address = trim($address);
         if ($address === '' || $this->gmapsApiKey === '') {
-            return null;
+            return [];
         }
 
         try {
@@ -69,31 +118,29 @@ final class GeoService
                     'key' => $this->gmapsApiKey,
                     'region' => 'fr',
                     'components' => 'country:FR',
+                    'language' => 'fr',
                 ],
                 'timeout' => 5,
             ]);
 
             if ($response->getStatusCode() !== 200) {
-                return null;
+                return [];
             }
 
             $data = $response->toArray(false);
         } catch (\Throwable) {
-            return null;
+            return [];
         }
 
         if (($data['status'] ?? null) !== 'OK') {
-            return null;
+            return [];
         }
 
-        $location = $data['results'][0]['geometry']['location'] ?? null;
-        if (!is_array($location) || !isset($location['lat'], $location['lng'])) {
-            return null;
+        $results = $data['results'] ?? [];
+        if (!is_array($results)) {
+            return [];
         }
 
-        return [
-            'lat' => (float) $location['lat'],
-            'lng' => (float) $location['lng'],
-        ];
+        return array_slice($results, 0, max(1, $limit));
     }
 }

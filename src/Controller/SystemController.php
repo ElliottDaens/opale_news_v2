@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 
 /*
 SystemController
@@ -24,6 +25,11 @@ POURQUOI : Pré-requis MVP — supervision infra, conformité légale française
 
 final class SystemController extends AbstractController
 {
+    private const SITEMAP_CATEGORIES = [
+        'Musique', 'Sport', 'Culture', 'Brocante', 'Marché',
+        'Gastronomie', 'Famille', 'Festival', 'Atelier', 'Conférence', 'Découverte',
+    ];
+
     #[Route('/health', name: 'app_health', methods: ['GET'])]
     public function health(): JsonResponse
     {
@@ -64,6 +70,29 @@ final class SystemController extends AbstractController
         $writer->writeElement('priority', '1.0');
         $writer->endElement();
 
+        $slugger = new AsciiSlugger('fr');
+
+        foreach (self::SITEMAP_CATEGORIES as $category) {
+            $slug = strtolower((string) $slugger->slug($category));
+            $writer->startElement('url');
+            $writer->writeElement('loc', $urlGenerator->generate('app_category_show', ['slug' => $slug], UrlGeneratorInterface::ABSOLUTE_URL));
+            $writer->writeElement('changefreq', 'daily');
+            $writer->writeElement('priority', '0.8');
+            $writer->endElement();
+        }
+
+        foreach ($events->findDistinctCities() as $city) {
+            $slug = strtolower((string) $slugger->slug($city));
+            if ($slug === '') {
+                continue;
+            }
+            $writer->startElement('url');
+            $writer->writeElement('loc', $urlGenerator->generate('app_city_show', ['slug' => $slug], UrlGeneratorInterface::ABSOLUTE_URL));
+            $writer->writeElement('changefreq', 'daily');
+            $writer->writeElement('priority', '0.8');
+            $writer->endElement();
+        }
+
         foreach ($events->findPubliclyVisible() as $event) {
             $url = $urlGenerator->generate('app_event_show', [
                 'id' => $event->getId(),
@@ -75,6 +104,14 @@ final class SystemController extends AbstractController
             $writer->writeElement('lastmod', $event->getUpdatedAt()->format('Y-m-d'));
             $writer->writeElement('changefreq', 'weekly');
             $writer->writeElement('priority', '0.7');
+            $writer->endElement();
+        }
+
+        foreach (['app_legal_notice', 'app_privacy_policy', 'app_event_submit'] as $route) {
+            $writer->startElement('url');
+            $writer->writeElement('loc', $urlGenerator->generate($route, [], UrlGeneratorInterface::ABSOLUTE_URL));
+            $writer->writeElement('changefreq', 'monthly');
+            $writer->writeElement('priority', '0.3');
             $writer->endElement();
         }
 

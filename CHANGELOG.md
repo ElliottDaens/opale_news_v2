@@ -5,6 +5,24 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2.2.0] - 2026-05-26
+
+### Ajouté
+
+- Pages taxonomie SEO : `/categorie/{slug}` et `/ville/{slug}` avec grilles d’événements filtrées.
+- Visionneuse de logs admin (`/admin/logs`, `/admin/logs/http`) — Monolog app + HTTP client (Gemini, Pinecone).
+- API d’autocomplétion d’adresse (`/api/geocode`) via Google Geocoding.
+- Événements similaires sur la fiche détail (voisins Pinecone par ID vectoriel).
+- Slugs catégorie / ville sur l’entité `Event` et liens depuis le pied de page.
+
+### Modifié
+
+- Sitemap XML enrichi (catégories, villes, pages légales et soumission).
+- Carte interactive et recherche : autocomplétion adresse, UX carte et filtres.
+- Styles accueil, fiche événement et back-office admin (logs).
+
+[2.2.0]: https://github.com/ElliottDaens/opale_news_v2/releases/tag/v2.2.0
+
 ## [2.1.0] - 2026-05-26
 
 ### Ajouté

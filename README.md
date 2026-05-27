@@ -1,6 +1,6 @@
 # Opale News v2
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue.svg)](VERSION)
 [![PHP](https://img.shields.io/badge/PHP-8.4-777BB4.svg)](https://www.php.net/)
 [![Symfony](https://img.shields.io/badge/Symfony-8.0-000000.svg)](https://symfony.com/)
 

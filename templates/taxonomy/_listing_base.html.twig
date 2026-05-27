@@ -1,0 +1,67 @@
+{#
+taxonomy/_listing_base.html.twig
+
+QUOI : Mise en page commune aux pages catégorie et ville (hero + grille + meta SEO).
+
+COMMENT : Templates « category.html.twig » et « city.html.twig » étendent ce gabarit en fournissant
+les blocks `taxonomy_title`, `taxonomy_intro`, `taxonomy_meta_description`, `taxonomy_heading`.
+
+POURQUOI : Garder une cohérence visuelle entre /categorie/* et /ville/* sans dupliquer le markup.
+#}
+{% extends 'base.html.twig' %}
+
+{% block title %}{% block taxonomy_title %}Événements Opale News{% endblock %}{% endblock %}
+
+{% block meta %}
+    <meta name="description" content="{% block taxonomy_meta_description %}Découvrez les événements sur la Côte d'Opale.{% endblock %}">
+    <link rel="canonical" href="{{ app.request.schemeAndHttpHost ~ app.request.pathInfo }}">
+{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+{% endblock %}
+
+{% block body %}
+    {% include '_partials/_site_header.html.twig' %}
+
+    <main class="container taxonomy-page">
+        <a href="{{ path('app_home') }}" class="event-detail__back">← Retour à l'agenda</a>
+
+        <header class="taxonomy-hero">
+            <p class="taxonomy-hero__kicker">{% block taxonomy_kicker %}Sélection{% endblock %}</p>
+            <h1 class="taxonomy-hero__title">{% block taxonomy_heading %}Événements{% endblock %}</h1>
+            <p class="taxonomy-hero__intro">{% block taxonomy_intro %}{% endblock %}</p>
+            <p class="taxonomy-hero__count">{{ totalEvents }} événement{{ totalEvents > 1 ? 's' : '' }} à venir</p>
+        </header>
+
+        {% if events|length == 0 %}
+            <p class="results-empty">Aucun événement programmé pour le moment.</p>
+        {% else %}
+            <section class="events-section">
+                <div class="events-grid">
+                    {% for event in events %}
+                        <a href="{{ path('app_event_show', { id: event.id, slug: event.slug }) }}" class="event-card-link">
+                            <article class="event-card">
+                                <div class="event-card__header">
+                                    <span class="event-card__category">{{ event.categorie }}</span>
+                                    <span class="event-card__date">{{ event.formatDateRange }}</span>
+                                </div>
+                                <h2 class="event-card__title">{{ event.titre }}</h2>
+                                <p class="event-card__ville">
+                                    <svg class="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M12 22s-8-7.58-8-13a8 8 0 0 1 16 0c0 5.42-8 13-8 13z"/>
+                                        <circle cx="12" cy="9" r="3"/>
+                                    </svg>
+                                    <span>{{ event.ville }}</span>
+                                </p>
+                                <p class="event-card__description">{{ event.description }}</p>
+                            </article>
+                        </a>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endif %}
+    </main>
+
+    {% include '_partials/_site_footer.html.twig' %}
+{% endblock %}

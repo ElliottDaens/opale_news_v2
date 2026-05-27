@@ -213,6 +213,22 @@ class Event
         return $slug !== '' ? $slug : 'evenement';
     }
 
+    public function getCategorieSlug(): string
+    {
+        self::$slugger ??= new AsciiSlugger('fr');
+        $slug = strtolower((string) self::$slugger->slug($this->categorie));
+
+        return $slug !== '' ? $slug : 'categorie';
+    }
+
+    public function getVilleSlug(): string
+    {
+        self::$slugger ??= new AsciiSlugger('fr');
+        $slug = strtolower((string) self::$slugger->slug($this->ville));
+
+        return $slug !== '' ? $slug : 'ville';
+    }
+
     public function getStartDateTime(): \DateTimeImmutable
     {
         $tz = new \DateTimeZone('Europe/Paris');

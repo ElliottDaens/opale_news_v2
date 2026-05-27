@@ -94,12 +94,12 @@ final class HomeController extends AbstractController
     }
 
     /**
-     * Affiche la fiche publique d’un événement (carte Leaflet, SEO, partage).
+     * Affiche la fiche publique d’un événement (carte Leaflet, SEO, partage, suggestions similaires).
      *
      * Comment : charge uniquement les événements approuvés ; redirige en 301 si le slug URL ne correspond pas au titre.
      */
     #[Route('/evenement/{id}/{slug}', name: 'app_event_show', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function show(int $id, string $slug): Response
+    public function show(int $id, string $slug, PineconeService $pinecone): Response
     {
         $event = $this->events->findOnePublicById($id);
         if ($event === null) {
@@ -115,7 +115,47 @@ final class HomeController extends AbstractController
 
         return $this->render('home/show.html.twig', [
             'event' => $event,
+            'similarEvents' => $this->findSimilarEvents($event, $pinecone),
         ]);
+    }
+
+    /**
+     * Suggestions « Vous aimerez aussi » : 3 événements proches sémantiquement via Pinecone,
+     * fallback même catégorie si l'event n'est pas indexé ou en cas d'erreur.
+     *
+     * @return Event[]
+     */
+    private function findSimilarEvents(Event $event, PineconeService $pinecone): array
+    {
+        if (!$event->isIndexed()) {
+            return $this->events->findRelatedByCategory($event->getCategorie(), $event->getId(), 3);
+        }
+
+        try {
+            $matches = $pinecone->queryById((string) $event->getId(), 6);
+            $similarIds = [];
+            foreach ($matches as $match) {
+                if ($match['id'] === $event->getId()) {
+                    continue;
+                }
+                $similarIds[] = $match['id'];
+            }
+
+            if ($similarIds === []) {
+                return $this->events->findRelatedByCategory($event->getCategorie(), $event->getId(), 3);
+            }
+
+            $similar = $this->events->findByIdsPreservingOrder($similarIds);
+
+            return array_slice($similar, 0, 3);
+        } catch (\Throwable $e) {
+            $this->logger->error('Similar events lookup failed, falling back to category', [
+                'exception' => $e,
+                'eventId' => $event->getId(),
+            ]);
+
+            return $this->events->findRelatedByCategory($event->getCategorie(), $event->getId(), 3);
+        }
     }
 
     /**
@@ -387,6 +427,25 @@ final class HomeController extends AbstractController
 
             return $this->json(['error' => 'Service de recherche temporairement indisponible.'], 500);
         }
+    }
+
+    /**
+     * Suggestions d'adresse pour le champ « Saisir mon adresse » (saisie manuelle de la position).
+     *
+     * Comment : proxy court vers `GeoService::geocodeSuggestions` (Google Geocoding côté serveur,
+     * jamais exposé au navigateur). Renvoie au plus 5 résultats lisibles avec lat/lng.
+     */
+    #[Route('/api/geocode', name: 'app_api_geocode', methods: ['GET'])]
+    public function geocode(Request $request, GeoService $geo): JsonResponse
+    {
+        $query = trim((string) $request->query->get('q', ''));
+        if (mb_strlen($query) < 3) {
+            return $this->json(['suggestions' => []]);
+        }
+
+        $suggestions = $geo->geocodeSuggestions($query, 5);
+
+        return $this->json(['suggestions' => $suggestions]);
     }
 
     /**

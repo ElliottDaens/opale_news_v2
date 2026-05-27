@@ -1,0 +1,113 @@
+{#
+admin/logs.html.twig
+
+QUOI : Vue admin des logs — onglets « Application » / « HTTP sortants », filtre par niveau, liste tail.
+
+COMMENT : Reçoit `entries`, `source`, `file`, `levels`, `level`, `lines`, `env`. Liens auto-générés vers les filtres.
+
+OÙ : Routes `app_admin_logs` (`/admin/logs`) et `app_admin_logs_http` (`/admin/logs/http`).
+
+POURQUOI : Diagnostic rapide des erreurs et des appels externes (Gemini, Pinecone) sans accès SSH.
+#}
+{% extends 'admin/_base.html.twig' %}
+
+{% block title %}Logs{% endblock %}
+
+{% block body %}
+    <header class="admin-page-header">
+        <h1>Logs</h1>
+        <p class="admin-page-subtitle">
+            Dernières lignes du journal applicatif et des appels HTTP sortants.
+            Environnement : <strong>{{ env }}</strong>.
+        </p>
+    </header>
+
+    {# Onglets de source : application (toutes erreurs) ↔ HTTP client (Gemini/Pinecone/Maps) #}
+    <nav class="logs-tabs" aria-label="Source des logs">
+        <a href="{{ path('app_admin_logs') }}"
+           class="logs-tab {{ source == 'app' ? 'is-active' : '' }}">
+            <span aria-hidden="true">🛎️</span> Application
+        </a>
+        <a href="{{ path('app_admin_logs_http') }}"
+           class="logs-tab {{ source == 'http' ? 'is-active' : '' }}">
+            <span aria-hidden="true">🌐</span> HTTP sortants
+        </a>
+        {% if profilerAvailable %}
+            <a href="/_profiler" class="logs-tab logs-tab--external" target="_blank" rel="noopener">
+                <span aria-hidden="true">🧪</span> Profiler Symfony ↗
+            </a>
+        {% endif %}
+    </nav>
+
+    {# Barre de filtres : niveaux + nb lignes #}
+    <section class="logs-toolbar" aria-label="Filtres logs">
+        <div class="logs-toolbar__group" role="group" aria-label="Filtrer par niveau">
+            <a href="{{ path(source == 'http' ? 'app_admin_logs_http' : 'app_admin_logs', {lines: lines}) }}"
+               class="logs-chip {{ level is null ? 'is-active' : '' }}">Tous</a>
+            {% for lvl in levels %}
+                <a href="{{ path(source == 'http' ? 'app_admin_logs_http' : 'app_admin_logs', {lines: lines, level: lvl}) }}"
+                   class="logs-chip logs-chip--{{ lvl|lower }} {{ level == lvl ? 'is-active' : '' }}">{{ lvl }}</a>
+            {% endfor %}
+        </div>
+
+        <div class="logs-toolbar__meta">
+            {% if fileExists %}
+                <span class="logs-meta">
+                    {{ totalShown }} entrée{{ totalShown > 1 ? 's' : '' }}
+                    {% if level %} ({{ level }}){% endif %}
+                    · fichier {{ (fileSize / 1024)|round(1) }} Ko
+                    {% if fileMtime %} · maj {{ fileMtime|date('d/m H:i:s') }}{% endif %}
+                </span>
+            {% endif %}
+            <a href="{{ app.request.uri }}" class="btn btn--ghost btn--small">↻ Rafraîchir</a>
+        </div>
+    </section>
+
+    {% if not fileExists %}
+        <div class="admin-empty">
+            <p>📭 Aucun fichier de log trouvé pour cette source.</p>
+            {% if file %}
+                <p class="logs-empty-hint"><code>{{ file }}</code></p>
+            {% else %}
+                <p class="logs-empty-hint">
+                    {% if source == 'http' %}
+                        Le canal <code>http_client</code> n'est configuré qu'en environnement <strong>dev</strong> ({{ env }}).
+                    {% else %}
+                        Aucune écriture n'a encore eu lieu — déclenchez une requête sur le site pour générer une première entrée.
+                    {% endif %}
+                </p>
+            {% endif %}
+        </div>
+    {% elseif entries is empty %}
+        <div class="admin-empty">
+            <p>✨ Pas d'entrée correspondant aux filtres actifs.</p>
+        </div>
+    {% else %}
+        <section class="logs-list">
+            {% for entry in entries %}
+                <article class="logs-entry logs-entry--{{ (entry.level ?? 'unknown')|lower }}">
+                    <header class="logs-entry__header">
+                        <span class="logs-entry__level logs-entry__level--{{ (entry.level ?? 'unknown')|lower }}">
+                            {{ entry.level ?? '—' }}
+                        </span>
+                        {% if entry.channel %}
+                            <span class="logs-entry__channel">{{ entry.channel }}</span>
+                        {% endif %}
+                        {% if entry.datetime %}
+                            <time class="logs-entry__time" datetime="{{ entry.datetime }}">
+                                {{ entry.datetime }}
+                            </time>
+                        {% endif %}
+                    </header>
+                    <p class="logs-entry__message">{{ entry.message }}</p>
+                    {% if entry.context %}
+                        <details class="logs-entry__context">
+                            <summary>Contexte</summary>
+                            <pre>{{ entry.context }}</pre>
+                        </details>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </section>
+    {% endif %}
+{% endblock %}
