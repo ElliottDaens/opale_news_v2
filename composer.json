@@ -3,7 +3,7 @@
     "description": "Agrégateur d'événements Côte d'Opale avec recherche sémantique (Gemini + Pinecone)",
     "type": "project",
     "license": "proprietary",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {

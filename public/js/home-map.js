@@ -30,6 +30,10 @@
         maxZoom: 16,
     }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
+    // Exposé pour permettre à `search.js` d'appeler `invalidateSize()`
+    // après ouverture du panneau « Voir la carte » (sinon tuiles grises).
+    window.OPALE_HOME_MAP = map;
+
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',

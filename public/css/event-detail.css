@@ -22,9 +22,12 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+    min-height: 40px;
+    padding: 0.25rem 0.1rem;
     color: var(--c-mer);
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
+    font-size: 0.95rem;
     margin-bottom: var(--space-md);
     transition: color var(--duration-base, 200ms) var(--ease-out, ease-out),
                 transform var(--duration-base, 200ms) var(--ease-out, ease-out);
@@ -49,14 +52,22 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
 
 .event-hero {
     position: relative;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     overflow: hidden;
     box-shadow: var(--shadow-md);
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-md);
     background: linear-gradient(135deg, var(--c-marine) 0%, var(--c-mer) 100%);
-    min-height: 320px;
+    min-height: 260px;
     display: flex;
     align-items: flex-end;
+}
+
+@media (min-width: 640px) {
+    .event-hero {
+        border-radius: var(--radius-lg);
+        margin-bottom: var(--space-lg);
+        min-height: 320px;
+    }
 }
 
 .event-hero__image {
@@ -92,8 +103,14 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
     position: relative;
     z-index: 2;
     color: var(--c-blanc);
-    padding: var(--space-lg) var(--space-md);
+    padding: var(--space-md);
     width: 100%;
+}
+
+@media (min-width: 640px) {
+    .event-hero__content {
+        padding: var(--space-lg) var(--space-md);
+    }
 }
 
 .event-hero__meta {
@@ -127,12 +144,15 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
 }
 
 .event-hero__title {
-    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 4vw, 2.75rem);
     line-height: 1.15;
     margin: 0 0 var(--space-sm) 0;
     color: var(--c-blanc);
-    text-shadow: 0 2px 12px rgba(10, 61, 98, 0.45);
-    letter-spacing: -0.01em;
+    text-shadow: 0 2px 14px rgba(10, 61, 98, 0.55);
+    letter-spacing: -0.015em;
+    font-weight: 800;
+    overflow-wrap: anywhere;
 }
 
 .event-hero__address {
@@ -177,6 +197,7 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
     }
     .event-sidebar {
         position: static;
+        order: -1;
     }
 }
 
@@ -196,6 +217,7 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
 }
 
 .event-panel__title {
+    font-family: var(--font-display);
     font-size: 1.15rem;
     color: var(--c-marine);
     margin: 0 0 var(--space-sm) 0;
@@ -428,12 +450,13 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.4rem;
+    gap: 0.45rem;
+    min-height: 48px;
     background: linear-gradient(135deg, var(--c-corail) 0%, var(--c-corail-fonce) 100%);
     color: var(--c-blanc);
     border: none;
     border-radius: var(--radius-sm);
-    padding: 0.7rem 1rem;
+    padding: 0.75rem 1.1rem;
     font-weight: 600;
     text-decoration: none;
     font-size: 0.95rem;
@@ -463,7 +486,8 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
     display: flex;
     align-items: center;
     gap: 0.85rem;
-    padding: 0.7rem 0.9rem;
+    min-height: 56px;
+    padding: 0.75rem 0.95rem;
     border-radius: var(--radius-sm);
     text-decoration: none;
     border: 1px solid var(--c-bordure);
@@ -528,9 +552,15 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
 
 .event-map {
     width: 100%;
-    height: 260px;
+    height: 220px;
     background-color: var(--c-sable-clair);
     position: relative;
+}
+
+@media (min-width: 640px) {
+    .event-map {
+        height: 260px;
+    }
 }
 
 .event-map .leaflet-container {
@@ -561,18 +591,20 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    background-color: var(--c-marine);
+    min-height: 52px;
+    background: linear-gradient(135deg, var(--c-marine) 0%, var(--c-mer) 100%);
     color: var(--c-blanc);
     text-decoration: none;
-    padding: 0.85rem var(--space-md);
+    padding: 0.95rem var(--space-md);
     font-weight: 600;
     font-size: 0.95rem;
-    transition: background-color var(--duration-base, 200ms) var(--ease-out, ease-out);
+    transition: background-color var(--duration-base, 200ms) var(--ease-out, ease-out),
+                filter var(--duration-base, 200ms) var(--ease-out, ease-out);
 }
 
 .event-map__directions:hover {
-    background-color: var(--c-mer);
     color: var(--c-blanc);
+    filter: brightness(1.08);
 }
 
 .event-map__directions svg {
@@ -674,7 +706,8 @@ POURQUOI : Isoler les styles spécifiques à la fiche événement sans alourdir 
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.55rem 0.9rem;
+    min-height: 44px;
+    padding: 0.6rem 1rem;
     border-radius: var(--radius-sm);
     border: 1px solid var(--c-bordure);
     background-color: var(--c-blanc);

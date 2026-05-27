@@ -36,54 +36,48 @@ POURQUOI : Garder l’utilisateur dans l’univers Côte d’Opale plutôt que d
             line-height: 1;
             margin: 0;
             letter-spacing: -0.05em;
-            background: linear-gradient(135deg, #0a4f7a, #4ac4d9);
+            background: linear-gradient(135deg, #0a3d62, #4a90b8);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
         }
         .error-page__title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: clamp(1.5rem, 4vw, 2.25rem);
             margin: 1rem 0 0.75rem;
+            color: #0a3d62;
         }
         .error-page__message {
             max-width: 36rem;
             margin: 0 auto 2.5rem;
             font-size: 1.05rem;
             line-height: 1.6;
-            color: #4b5563;
+            color: #5a6b7a;
         }
         .error-page__cta {
             display: inline-flex;
             align-items: center;
             gap: 0.6rem;
             padding: 1rem 2.25rem;
-            background: linear-gradient(135deg, #0a4f7a, #4ac4d9);
+            background: linear-gradient(135deg, #0a3d62, #1e6091);
             color: #fff;
             font-weight: 700;
             font-size: 1.05rem;
             text-decoration: none;
             border-radius: 999px;
-            box-shadow: 0 12px 28px rgba(10, 79, 122, 0.25);
+            box-shadow: 0 12px 28px rgba(10, 61, 98, 0.22);
             transition: transform 0.18s ease, box-shadow 0.18s ease;
         }
         .error-page__cta:hover,
         .error-page__cta:focus-visible {
             transform: translateY(-2px);
-            box-shadow: 0 18px 32px rgba(10, 79, 122, 0.32);
+            box-shadow: 0 18px 32px rgba(10, 61, 98, 0.28);
         }
     </style>
 {% endblock %}
 
 {% block body %}
-    <header class="site-header">
-        <div class="container">
-            <a href="{{ path('app_home') }}" class="logo">
-                <span class="logo-mark" aria-hidden="true">◐</span>
-                <span class="logo-text">Opale News</span>
-            </a>
-            <p class="tagline">L'agenda local de la Côte d'Opale</p>
-        </div>
-    </header>
+    {% include '_partials/_site_header.html.twig' with { show_cta: false } %}
 
     <main class="container">
         <section class="error-page" role="alert" aria-labelledby="error-title">
@@ -100,9 +94,5 @@ POURQUOI : Garder l’utilisateur dans l’univers Côte d’Opale plutôt que d
         </section>
     </main>
 
-    <footer class="site-footer">
-        <div class="container">
-            <p>&copy; {{ "now"|date('Y') }} Opale News — Pas-de-Calais</p>
-        </div>
-    </footer>
+    {% include '_partials/_site_footer.html.twig' %}
 {% endblock %}

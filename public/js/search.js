@@ -32,9 +32,76 @@
     const loadMoreBtn = document.getElementById('load-more-btn');
     const sortToggle = document.getElementById('sort-toggle');
     const facetChips = document.getElementById('facet-chips');
+    const filtersButton = document.getElementById('filters-button');
+    const filtersPanel = document.getElementById('filters-panel');
+    const filtersBadge = document.getElementById('filters-badge');
+    const mapToggle = document.getElementById('map-toggle');
+    const mapSection = document.getElementById('home-map-section');
+    const mapClose = document.getElementById('map-close');
 
     if (!searchInput || !primaryGrid) {
         return;
+    }
+
+    function updateFiltersBadge() {
+        if (!filtersBadge) return;
+        const count = activeFilters.categories.size;
+        if (count > 0) {
+            filtersBadge.textContent = String(count);
+            filtersBadge.hidden = false;
+        } else {
+            filtersBadge.hidden = true;
+        }
+    }
+
+    function setFiltersPanelOpen(open) {
+        if (!filtersButton || !filtersPanel) return;
+        filtersButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+        filtersPanel.hidden = !open;
+    }
+
+    function setMapOpen(open) {
+        if (!mapToggle || !mapSection) return;
+        mapToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+        mapSection.classList.toggle('is-collapsed', !open);
+        mapSection.setAttribute('aria-hidden', open ? 'false' : 'true');
+        const label = mapToggle.querySelector('.toolbar-pill__label');
+        if (label) {
+            label.textContent = open ? 'Masquer la carte' : 'Voir la carte';
+        }
+        if (open) {
+            // Le conteneur Leaflet a besoin que ses dimensions soient mises à jour
+            // après affichage (sinon tuiles grises).
+            setTimeout(function () {
+                if (window.OPALE_HOME_MAP && typeof window.OPALE_HOME_MAP.invalidateSize === 'function') {
+                    window.OPALE_HOME_MAP.invalidateSize();
+                }
+                window.dispatchEvent(new Event('resize'));
+            }, 320);
+        }
+    }
+
+    if (filtersButton && filtersPanel) {
+        filtersButton.addEventListener('click', () => {
+            const isOpen = filtersButton.getAttribute('aria-expanded') === 'true';
+            setFiltersPanelOpen(!isOpen);
+        });
+    }
+
+    if (mapToggle && mapSection) {
+        mapToggle.addEventListener('click', () => {
+            const isOpen = mapToggle.getAttribute('aria-expanded') === 'true';
+            setMapOpen(!isOpen);
+        });
+    }
+
+    if (mapClose) {
+        mapClose.addEventListener('click', () => {
+            setMapOpen(false);
+            if (mapToggle && typeof mapToggle.focus === 'function') {
+                mapToggle.focus();
+            }
+        });
     }
 
     const activeFilters = {
@@ -44,6 +111,23 @@
         period: 'all',
         freeOnly: false,
     };
+
+    // Tri choisi manuellement par l'utilisateur (Pertinence/Date) — restauré quand
+    // la géoloc est désactivée. Permet d'avoir « distance » comme tri auto temporaire.
+    let userPreferredSort = 'relevance';
+
+    function setSortToggleVisualState(currentSort) {
+        if (!sortToggle) return;
+        const isDistance = currentSort === 'distance';
+        sortToggle.classList.toggle('is-distance-mode', isDistance);
+        sortToggle.querySelectorAll('[data-sort]').forEach((el) => {
+            // En mode distance, aucun des deux boutons sort visibles n'est actif.
+            const targetSort = isDistance ? userPreferredSort : currentSort;
+            const isActive = el.dataset.sort === targetSort && !isDistance;
+            el.classList.toggle('is-active', isActive);
+            el.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+    }
 
     let userPosition = loadStoredPosition();
 
@@ -73,16 +157,22 @@
 
         if (state === 'active') {
             geoButton.classList.add('is-active');
-            geoButtonLabel.textContent = 'Position activée';
+            geoButtonLabel.textContent = 'Tri par distance';
+            // Bascule auto sur tri distance (geoloc → résultats les plus proches d'abord).
+            activeFilters.sort = 'distance';
         } else if (state === 'loading') {
             geoButton.classList.add('is-loading');
             geoButtonLabel.textContent = 'Localisation…';
         } else if (state === 'error') {
             geoButton.classList.add('is-error');
             geoButtonLabel.textContent = 'Ma position';
+            activeFilters.sort = userPreferredSort;
         } else {
             geoButtonLabel.textContent = 'Ma position';
+            activeFilters.sort = userPreferredSort;
         }
+
+        setSortToggleVisualState(activeFilters.sort);
 
         if (geoStatus) {
             if (message) {
@@ -455,14 +545,15 @@
             const btn = event.target.closest('[data-sort]');
             if (!btn) return;
             const nextSort = btn.dataset.sort === 'date' ? 'date' : 'relevance';
-            if (nextSort === activeFilters.sort) return;
+            userPreferredSort = nextSort;
 
-            activeFilters.sort = nextSort;
-            sortToggle.querySelectorAll('[data-sort]').forEach((el) => {
-                const isActive = el.dataset.sort === nextSort;
-                el.classList.toggle('is-active', isActive);
-                el.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-            });
+            // Si la géoloc est active, le tri reste « distance » mais on mémorise
+            // la préférence pour la restaurer dès que la géoloc est désactivée.
+            const effectiveSort = userPosition ? 'distance' : nextSort;
+            if (effectiveSort === activeFilters.sort) return;
+
+            activeFilters.sort = effectiveSort;
+            setSortToggleVisualState(activeFilters.sort);
             resetAndSearch();
         });
     }
@@ -485,6 +576,7 @@
                     btn.classList.add('is-active');
                     btn.setAttribute('aria-pressed', 'true');
                 }
+                updateFiltersBadge();
             } else if (facet === 'period') {
                 const nextPeriod = activeFilters.period === value ? 'all' : value;
                 activeFilters.period = nextPeriod;

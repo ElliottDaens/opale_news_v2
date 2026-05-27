@@ -19,26 +19,20 @@ POURQUOI : Cœur produit visiteur — découverte d’événements sans recharge
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 </head>
 <body>
-    {# Identité + lien vers la soumission d’événement #}
-    <header class="site-header">
-        <div class="container">
-            <a href="{{ path('app_home') }}" class="logo">
-                <span class="logo-mark" aria-hidden="true">◐</span>
-                <span class="logo-text">Opale News</span>
-            </a>
-            <p class="tagline">L'agenda local de la Côte d'Opale</p>
-            <a href="{{ path('app_event_submit') }}" class="header-cta">
-                <span aria-hidden="true">+</span> Proposer un événement
-            </a>
-        </div>
-    </header>
+    {% include '_partials/_site_header.html.twig' %}
 
     <main class="container">
         {# Barre de recherche, géolocalisation, compteur ; le chip temporel est inséré par le JS #}
         <section class="search-section">
+            <div class="search-panel">
             <h1>Que faire près de chez vous&nbsp;?</h1>
             <div class="search-wrapper">
-                <span class="search-icon" aria-hidden="true">🔍</span>
+                <span class="search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                </span>
                 <input
                     type="search"
                     id="search-input"
@@ -59,16 +53,50 @@ POURQUOI : Cœur produit visiteur — découverte d’événements sans recharge
                 </button>
                 <div class="sort-toggle" role="group" aria-label="Trier les événements" id="sort-toggle">
                     <button type="button" class="sort-toggle__btn is-active" data-sort="relevance" aria-pressed="true">
-                        <span aria-hidden="true">🎯</span> Pertinence
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"/>
+                            <circle cx="12" cy="12" r="5"/>
+                            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                        </svg>
+                        Pertinence
                     </button>
                     <button type="button" class="sort-toggle__btn" data-sort="date" aria-pressed="false">
-                        <span aria-hidden="true">📅</span> Par Date
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="3" y="4" width="18" height="18" rx="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                        Par date
                     </button>
                 </div>
+                <button type="button"
+                        class="toolbar-pill toolbar-pill--filters"
+                        id="filters-button"
+                        aria-expanded="false"
+                        aria-controls="filters-panel">
+                    <svg class="toolbar-pill__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                    </svg>
+                    <span class="toolbar-pill__label">Filtres</span>
+                    <span class="toolbar-pill__badge" id="filters-badge" hidden>0</span>
+                </button>
+                <button type="button"
+                        class="toolbar-pill toolbar-pill--map"
+                        id="map-toggle"
+                        aria-expanded="false"
+                        aria-controls="home-map-section">
+                    <svg class="toolbar-pill__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                        <line x1="8" y1="2" x2="8" y2="18"/>
+                        <line x1="16" y1="6" x2="16" y2="22"/>
+                    </svg>
+                    <span class="toolbar-pill__label">Voir la carte</span>
+                </button>
                 {# Emplacement du chip temporel (injection JS quand actif) #}
             </div>
 
-            {# Chips facettes : catégories, périodes, gratuit (cumulables avec la recherche IA) #}
+            {# Chips facettes : période et gratuit toujours visibles (filtres rapides). Catégories repliées derrière le bouton "Filtres". #}
             <div class="facet-chips" id="facet-chips" aria-label="Filtres rapides">
                 <div class="facet-chips__group" role="group" aria-label="Période">
                     {% for p in periods %}
@@ -77,29 +105,45 @@ POURQUOI : Cœur produit visiteur — découverte d’événements sans recharge
                         </button>
                     {% endfor %}
                 </div>
-                <div class="facet-chips__group" role="group" aria-label="Catégorie">
-                    {% for cat in categories %}
-                        <button type="button" class="facet-chip facet-chip--category" data-facet="category" data-value="{{ cat }}" aria-pressed="false">
-                            {{ cat }}
-                        </button>
-                    {% endfor %}
-                </div>
                 <div class="facet-chips__group" role="group" aria-label="Tarif">
                     <button type="button" class="facet-chip facet-chip--free" data-facet="freeOnly" data-value="1" aria-pressed="false">
-                        <span aria-hidden="true">🆓</span> Gratuit
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                            <line x1="7" y1="7" x2="7.01" y2="7"/>
+                        </svg>
+                        Gratuit
                     </button>
+                </div>
+                <div class="facet-chips__panel" id="filters-panel" role="group" aria-label="Catégorie" hidden>
+                    <p class="facet-chips__panel-label">Filtrer par catégorie</p>
+                    <div class="facet-chips__group">
+                        {% for cat in categories %}
+                            <button type="button" class="facet-chip facet-chip--category" data-facet="category" data-value="{{ cat }}" aria-pressed="false">
+                                {{ cat }}
+                            </button>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
 
             <p class="results-count" id="results-count">{{ totalEvents }} événements à découvrir</p>
             <p class="geo-status" id="geo-status" hidden></p>
+            </div>
         </section>
 
-        {# Carte interactive : un pin par événement géolocalisé ; popup au clic #}
-        <section class="home-map-section" aria-label="Carte des événements sur la Côte d'Opale">
+        {# Carte interactive : repliée par défaut, dévoilée via le bouton « Voir la carte ». #}
+        <section class="home-map-section is-collapsed" id="home-map-section" aria-label="Carte des événements sur la Côte d'Opale" aria-hidden="true">
             <div class="home-map-section__header">
-                <h2 class="home-map-section__title">Sur la carte</h2>
-                <p class="home-map-section__hint">Cliquez sur un pin pour voir l'événement (Calais, Boulogne, etc.)</p>
+                <div>
+                    <h2 class="home-map-section__title">Sur la carte</h2>
+                    <p class="home-map-section__hint">Cliquez sur un pin pour voir l'événement (Calais, Boulogne, etc.)</p>
+                </div>
+                <button type="button" class="home-map-section__close" id="map-close" aria-label="Masquer la carte">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
             </div>
             <div class="home-events-map" id="home-events-map" role="application" aria-label="Carte des événements"></div>
             <p class="home-map-empty" id="home-map-empty" hidden>
@@ -109,6 +153,11 @@ POURQUOI : Cœur produit visiteur — découverte d’événements sans recharge
 
         {# Cartes événements : rendu Twig initial, puis mise à jour dynamique via l’API recherche #}
         <section class="events-section" aria-live="polite">
+            <div class="section-heading">
+                <h2 class="section-heading__title">Événements</h2>
+                <p class="section-heading__subtitle">Sélection locale sur la Côte d'Opale</p>
+            </div>
+
             <p class="results-empty" id="results-empty" hidden>
                 Aucun événement ne correspond à votre recherche.
             </p>
@@ -152,7 +201,11 @@ POURQUOI : Cœur produit visiteur — découverte d’événements sans recharge
             <div class="secondary-divider">
                 <span class="secondary-divider__line" aria-hidden="true"></span>
                 <h3 class="secondary-divider__label">
-                    <span aria-hidden="true">💡</span>
+                    <svg class="secondary-divider__icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 18h6"/>
+                        <path d="M10 22h4"/>
+                        <path d="M12 2a7 7 0 0 0-4 12.7c.7.6 1 1.4 1 2.3v1h6v-1c0-.9.3-1.7 1-2.3A7 7 0 0 0 12 2z"/>
+                    </svg>
                     Voir plus
                 </h3>
                 <span class="secondary-divider__line" aria-hidden="true"></span>
@@ -164,13 +217,7 @@ POURQUOI : Cœur produit visiteur — découverte d’événements sans recharge
         </section>
     </main>
 
-    {# Copyright année courante #}
-    <footer class="site-footer">
-        <div class="container">
-            <p>&copy; {{ "now"|date('Y') }} Opale News — Pas-de-Calais</p>
-            <a href="{{ path('app_login') }}" class="footer-login">Connexion admin</a>
-        </div>
-    </footer>
+    {% include '_partials/_site_footer.html.twig' %}
 
     <script>
         window.OPALE_MAP_EVENTS = {{ mapEvents|json_encode|raw }};

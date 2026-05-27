@@ -97,18 +97,7 @@ POURQUOI : Référencement Google Events, partages riches Facebook/X/LinkedIn, f
 
 {% block body %}
     {# ---------- En-tête site ---------- #}
-    <header class="site-header">
-        <div class="container">
-            <a href="{{ path('app_home') }}" class="logo">
-                <span class="logo-mark" aria-hidden="true">◐</span>
-                <span class="logo-text">Opale News</span>
-            </a>
-            <p class="tagline">L'agenda local de la Côte d'Opale</p>
-            <a href="{{ path('app_event_submit') }}" class="header-cta">
-                <span aria-hidden="true">+</span> Proposer un événement
-            </a>
-        </div>
-    </header>
+    {% include '_partials/_site_header.html.twig' %}
 
     <main class="container event-detail">
         <a href="{{ path('app_home') }}" class="event-detail__back">← Retour à l'agenda</a>
@@ -392,12 +381,7 @@ POURQUOI : Référencement Google Events, partages riches Facebook/X/LinkedIn, f
     </main>
 
     {# ---------- Pied de page ---------- #}
-    <footer class="site-footer">
-        <div class="container">
-            <p>&copy; {{ "now"|date('Y') }} Opale News — Pas-de-Calais</p>
-            <a href="{{ path('app_login') }}" class="footer-login">Connexion admin</a>
-        </div>
-    </footer>
+    {% include '_partials/_site_footer.html.twig' %}
 
     {# ---------- Copie d'URL pour le bouton « Copier le lien » ---------- #}
     <script>

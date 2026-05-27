@@ -39,12 +39,12 @@ POURQUOI : Conformité CNIL — aucun appel aux services tiers tant que l'utilis
         bottom: 1rem;
         z-index: 9999;
         background: #ffffff;
-        color: #1a1a1a;
-        border: 1px solid rgba(0, 0, 0, 0.08);
+        color: #0a3d62;
+        border: 1px solid #e8dec8;
         border-radius: 14px;
-        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+        box-shadow: 0 18px 48px rgba(10, 61, 98, 0.16);
         padding: 1.1rem 1.25rem;
-        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         font-size: 0.95rem;
         line-height: 1.45;
         animation: cookie-banner-in 0.35s ease-out;
@@ -70,15 +70,16 @@ POURQUOI : Conformité CNIL — aucun appel aux services tiers tant que l'utilis
     .cookie-banner__title {
         margin: 0 0 0.3rem;
         font-size: 1rem;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: 0.01em;
+        color: #0a3d62;
     }
     .cookie-banner__text p {
         margin: 0;
-        color: #3a3a3a;
+        color: #5a6b7a;
     }
     .cookie-banner__text a {
-        color: inherit;
+        color: #1e6091;
         text-decoration: underline;
         text-underline-offset: 2px;
     }
@@ -99,15 +100,15 @@ POURQUOI : Conformité CNIL — aucun appel aux services tiers tant que l'utilis
     .cookie-banner__btn:active { transform: translateY(1px); }
     .cookie-banner__btn--refuse {
         background: transparent;
-        color: #1a1a1a;
-        border-color: rgba(0, 0, 0, 0.18);
+        color: #0a3d62;
+        border-color: #e8dec8;
     }
-    .cookie-banner__btn--refuse:hover { background: rgba(0, 0, 0, 0.04); }
+    .cookie-banner__btn--refuse:hover { background: rgba(10, 61, 98, 0.04); }
     .cookie-banner__btn--accept {
-        background: #1a1a1a;
+        background: #0a3d62;
         color: #ffffff;
     }
-    .cookie-banner__btn--accept:hover { background: #000000; }
+    .cookie-banner__btn--accept:hover { background: #1e6091; }
 
     /* Avertissement affiché à la place des services tiers si l'utilisateur n'a pas consenti */
     .consent-required {

@@ -1,0 +1,17 @@
+{# En-tête public partagé — show_cta=false pour masquer le bouton (ex. page soumission) #}
+<header class="site-header">
+    <div class="container site-header__inner">
+        <div class="header-brand">
+            <a href="{{ path('app_home') }}" class="logo">
+                <span class="logo-mark" aria-hidden="true">◐</span>
+                <span class="logo-text">Opale News</span>
+            </a>
+            <p class="tagline">L'agenda local de la Côte d'Opale</p>
+        </div>
+        {% if show_cta|default(true) %}
+            <a href="{{ path('app_event_submit') }}" class="header-cta">
+                <span aria-hidden="true">+</span> Proposer un événement
+            </a>
+        {% endif %}
+    </div>
+</header>

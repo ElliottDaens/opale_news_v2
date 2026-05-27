@@ -22,19 +22,11 @@ POURQUOI : Verrouiller toute édition en aval du workflow de modération sans ca
     <link rel="stylesheet" href="{{ asset('css/submission.css') }}">
 </head>
 <body>
-    <header class="site-header">
-        <div class="container">
-            <a href="{{ path('app_home') }}" class="logo">
-                <span class="logo-mark" aria-hidden="true">◐</span>
-                <span class="logo-text">Opale News</span>
-            </a>
-            <p class="tagline">L'agenda local de la Côte d'Opale</p>
-        </div>
-    </header>
+    {% include '_partials/_site_header.html.twig' with { show_cta: false } %}
 
     <main class="container">
         <div class="thanks-card">
-            <div class="thanks-icon" aria-hidden="true">⚠</div>
+            <div class="thanks-icon thanks-icon--warning" aria-hidden="true">⚠</div>
             <h1>Modification impossible</h1>
             <p class="thanks-message">{{ message }}</p>
             <p class="thanks-message thanks-message--small">
@@ -46,5 +38,7 @@ POURQUOI : Verrouiller toute édition en aval du workflow de modération sans ca
             </div>
         </div>
     </main>
+
+    {% include '_partials/_site_footer.html.twig' %}
 </body>
 </html>

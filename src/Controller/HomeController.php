@@ -46,6 +46,10 @@ final class HomeController extends AbstractController
 
     private const PAGE_SIZE = 12;
 
+    // Tri par distance : pool de lignes ramenées en mémoire pour être triées avant pagination.
+    // Garde-fou raisonnable pour ne pas charger toute la base si la collection grossit.
+    private const DISTANCE_SORT_POOL_SIZE = 200;
+
     private const FACET_CATEGORIES = [
         'Musique', 'Sport', 'Culture', 'Brocante', 'Marché',
         'Gastronomie', 'Famille', 'Festival', 'Atelier', 'Conférence', 'Découverte',
@@ -207,7 +211,13 @@ final class HomeController extends AbstractController
         $userLng = $request->query->has('lng') ? (float) $request->query->get('lng') : null;
         $hasPosition = $userLat !== null && $userLng !== null;
 
-        $sort = $request->query->get('sort') === 'date' ? 'date' : 'relevance';
+        $rawSort = (string) $request->query->get('sort', 'relevance');
+        // `distance` n'a de sens qu'avec une position utilisateur — sinon retombe sur `relevance`.
+        $sort = match (true) {
+            $rawSort === 'date' => 'date',
+            $rawSort === 'distance' && $hasPosition => 'distance',
+            default => 'relevance',
+        };
         $page = max(1, (int) $request->query->get('page', 1));
         $offset = ($page - 1) * self::PAGE_SIZE;
 
@@ -222,18 +232,40 @@ final class HomeController extends AbstractController
         $hasFacets = $categories !== [] || $period !== 'all' || $freeOnly;
 
         if ($query === '') {
-            $events = $this->events->findByFilters(
-                $sort,
-                $page,
-                self::PAGE_SIZE,
-                $categories,
-                $period,
-                $freeOnly,
-            );
-            $data = array_map(
-                fn (Event $e): array => $this->buildEventRow($e, null, null, $userLat, $userLng, $geo),
-                $events,
-            );
+            // Pour le tri par distance, on récupère un lot plus large sans pagination SQL,
+            // puis on trie en PHP avec les distances calculées dans buildEventRow.
+            if ($sort === 'distance') {
+                $events = $this->events->findByFilters(
+                    'date',
+                    1,
+                    self::DISTANCE_SORT_POOL_SIZE,
+                    $categories,
+                    $period,
+                    $freeOnly,
+                );
+                $allRows = array_map(
+                    fn (Event $e): array => $this->buildEventRow($e, null, null, $userLat, $userLng, $geo),
+                    $events,
+                );
+                $allRows = $this->sortRowsByDistance($allRows);
+                $offset = ($page - 1) * self::PAGE_SIZE;
+                $data = array_slice($allRows, $offset, self::PAGE_SIZE);
+                $hasMore = count($allRows) > $offset + self::PAGE_SIZE;
+            } else {
+                $events = $this->events->findByFilters(
+                    $sort,
+                    $page,
+                    self::PAGE_SIZE,
+                    $categories,
+                    $period,
+                    $freeOnly,
+                );
+                $data = array_map(
+                    fn (Event $e): array => $this->buildEventRow($e, null, null, $userLat, $userLng, $geo),
+                    $events,
+                );
+                $hasMore = count($data) >= self::PAGE_SIZE;
+            }
 
             return $this->json([
                 'primary' => $data,
@@ -242,7 +274,7 @@ final class HomeController extends AbstractController
                 'hasPosition' => $hasPosition,
                 'page' => $page,
                 'sort' => $sort,
-                'hasMore' => count($data) >= self::PAGE_SIZE,
+                'hasMore' => $hasMore,
             ]);
         }
 
@@ -326,6 +358,10 @@ final class HomeController extends AbstractController
                     return strcmp($a['startDate'] ?? '', $b['startDate'] ?? '');
                 });
                 $primaryRows = $merged;
+                $secondaryRows = [];
+            } elseif ($sort === 'distance') {
+                $merged = array_merge($primaryRows, $secondaryRows);
+                $primaryRows = $this->sortRowsByDistance($merged);
                 $secondaryRows = [];
             }
 
@@ -760,6 +796,24 @@ final class HomeController extends AbstractController
      *
      * @return list<array<string, mixed>>
      */
+    /**
+     * Trie les lignes par `distanceKm` ascendant. Les lignes sans distance (coordonnées
+     * manquantes ou position utilisateur absente) sont reléguées en fin de liste.
+     *
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private function sortRowsByDistance(array $rows): array
+    {
+        usort($rows, static function (array $a, array $b): int {
+            $da = isset($a['distanceKm']) && is_numeric($a['distanceKm']) ? (float) $a['distanceKm'] : INF;
+            $db = isset($b['distanceKm']) && is_numeric($b['distanceKm']) ? (float) $b['distanceKm'] : INF;
+            return $da <=> $db;
+        });
+
+        return $rows;
+    }
+
     private function buildMapMarkersFromRows(array $rows): array
     {
         $markers = [];

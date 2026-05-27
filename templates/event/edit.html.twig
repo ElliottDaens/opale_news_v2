@@ -22,15 +22,7 @@ POURQUOI : Permettre à l'organisateur de corriger ses propres erreurs tant que 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
 </head>
 <body>
-    <header class="site-header">
-        <div class="container">
-            <a href="{{ path('app_home') }}" class="logo">
-                <span class="logo-mark" aria-hidden="true">◐</span>
-                <span class="logo-text">Opale News</span>
-            </a>
-            <p class="tagline">L'agenda local de la Côte d'Opale</p>
-        </div>
-    </header>
+    {% include '_partials/_site_header.html.twig' with { show_cta: false } %}
 
     <main class="container submission-container">
         <a href="{{ path('app_home') }}" class="back-link">← Retour aux événements</a>
@@ -159,6 +151,8 @@ POURQUOI : Permettre à l'organisateur de corriger ses propres erreurs tant que 
             <a href="https://policies.google.com/terms" target="_blank" rel="noopener">Conditions</a>
         </p>
     </main>
+
+    {% include '_partials/_site_footer.html.twig' %}
 
     <dialog class="cropper-modal" id="cropper-modal">
         <h3 class="cropper-modal__title">Recadrer l'image</h3>
