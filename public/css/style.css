@@ -1957,6 +1957,119 @@ body > main {
     margin-top: var(--space-sm);
 }
 
+
+/* ──────────────────────────────────────────────────
+   Pages textuelles (mentions légales, à propos…)
+   ────────────────────────────────────────────────── */
+
+.prose-page {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--space-xl) max(var(--space-sm), env(safe-area-inset-left));
+}
+
+@media (min-width: 640px) {
+    .prose-page {
+        padding: var(--space-xl) var(--space-md);
+    }
+}
+
+.prose-page h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    font-weight: 800;
+    color: var(--c-marine);
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    margin: 0 0 var(--space-lg);
+    padding-bottom: var(--space-md);
+    border-bottom: 2px solid var(--c-bordure);
+}
+
+.prose-page h2 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--c-marine);
+    margin: var(--space-lg) 0 var(--space-xs);
+    padding-left: 0.875rem;
+    border-left: 3px solid var(--c-corail);
+    line-height: 1.3;
+}
+
+.prose-page h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--c-texte);
+    margin: var(--space-md) 0 var(--space-xs);
+}
+
+.prose-page p {
+    margin: 0 0 1em;
+    line-height: 1.75;
+    color: var(--c-texte);
+}
+
+.prose-page ul,
+.prose-page ol {
+    margin: 0 0 1.25em;
+    padding-left: 1.5rem;
+    line-height: 1.75;
+    color: var(--c-texte);
+}
+
+.prose-page li {
+    margin-bottom: 0.5em;
+}
+
+.prose-page a:not(.back-link) {
+    color: var(--c-mer);
+    text-decoration: underline;
+    text-decoration-color: rgba(30, 96, 145, 0.35);
+    text-underline-offset: 2px;
+    transition: color var(--duration-fast), text-decoration-color var(--duration-fast);
+}
+
+.prose-page a:not(.back-link):hover {
+    color: var(--c-marine);
+    text-decoration-color: var(--c-marine);
+}
+
+.prose-page strong {
+    font-weight: 600;
+    color: var(--c-marine);
+}
+
+/* Lien retour en bas des pages textuelles + page partenaire */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: var(--space-md);
+    padding: 0.55rem 1.1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--c-mer);
+    background-color: var(--c-blanc);
+    border: 1.5px solid var(--c-bordure);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    box-shadow: var(--shadow-xs);
+    transition: background-color var(--duration-fast) var(--ease-out),
+                border-color var(--duration-fast) var(--ease-out),
+                transform var(--duration-fast) var(--ease-out),
+                color var(--duration-fast) var(--ease-out);
+}
+
+.back-link:hover {
+    background-color: var(--c-sable);
+    border-color: var(--c-mer-clair);
+    transform: translateY(-1px);
+    color: var(--c-marine);
+    text-decoration: none;
+}
+
 /* ---------- Navigation contextuelle (fiche événement) ---------- */
 .event-context-nav {
     margin: var(--space-lg) 0;
@@ -2062,3 +2175,115 @@ body > main {
     font-size: 0.9rem;
     font-weight: 500;
 }
+
+/* ---------- Événements « Incontournables » (positionnement préférentiel) ----------
+   Identité premium : cadre or feutré, bandeau doré en haut, badge ruban avec
+   reflet, halo chaud au hover. Reste dans le langage visuel Opale (marine/corail)
+   en n'utilisant l'or que comme accent. */
+.event-card--featured {
+    border: 1px solid rgba(212, 175, 55, 0.55);
+    border-left: 3px solid #d4af37;
+    background:
+        radial-gradient(circle at 100% 0%, rgba(245, 215, 110, 0.18) 0%, transparent 45%),
+        linear-gradient(180deg, #fffaf0 0%, var(--c-blanc) 55%);
+    box-shadow:
+        0 1px 2px rgba(184, 149, 34, 0.08),
+        0 6px 16px rgba(184, 149, 34, 0.10);
+    padding-top: calc(var(--space-md) + 0.85rem);
+    overflow: hidden;
+}
+
+/* Fin liseré doré en haut de la card — accent discret mais immédiatement lisible. */
+.event-card--featured::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg,
+        rgba(212, 175, 55, 0) 0%,
+        #d4af37 18%,
+        #f5d76e 50%,
+        #d4af37 82%,
+        rgba(212, 175, 55, 0) 100%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Le gradient diagonal du `.event-card::before` reste, mais teinté or au lieu de mer. */
+.event-card--featured::before {
+    background: linear-gradient(135deg, transparent 0%, transparent 55%, rgba(212, 175, 55, 0.10) 100%);
+}
+
+@media (hover: hover) {
+    .event-card--featured:hover {
+        border-color: #d4af37;
+        border-left-color: #b89522;
+        box-shadow:
+            0 2px 4px rgba(184, 149, 34, 0.12),
+            0 14px 32px rgba(184, 149, 34, 0.22),
+            0 0 0 1px rgba(212, 175, 55, 0.35);
+        transform: translateY(-5px);
+    }
+}
+
+.event-card__featured-badge {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.32rem;
+    padding: 0.34rem 0.75rem;
+    font-family: var(--font-display, inherit);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4a3a08;
+    background: linear-gradient(135deg, #f5d76e 0%, #e0bf3a 55%, #c69820 100%);
+    border-radius: 999px;
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        inset 0 -1px 0 rgba(122, 91, 12, 0.22),
+        0 3px 10px rgba(184, 149, 34, 0.38);
+    line-height: 1;
+    z-index: 3;
+    white-space: nowrap;
+}
+
+.event-card__featured-icon {
+    display: inline-block;
+    font-size: 0.95rem;
+    line-height: 0;
+    color: #ffffff;
+    text-shadow: 0 0 6px rgba(255, 235, 150, 0.9);
+    transform: translateY(0.5px);
+}
+
+/* Si la carte porte aussi un score sémantique (badge pertinence à droite), on déplace
+   le badge « Incontournable » à gauche pour ne pas se chevaucher. */
+.event-card--featured.event-card--scored .event-card__featured-badge {
+    right: auto;
+    left: 0.85rem;
+}
+
+/* ---------- Admin : marquage et toggle « Incontournable » ---------- */
+.admin-event-card--featured {
+    border-left: 3px solid #d4af37;
+    background: linear-gradient(180deg, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
+}
+
+.admin-event-card__featured-flag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #5c4708;
+    background: linear-gradient(135deg, #f5d76e 0%, #d4af37 100%);
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+}
+

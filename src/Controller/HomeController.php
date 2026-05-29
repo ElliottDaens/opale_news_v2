@@ -6,6 +6,7 @@ use App\Entity\Event;
 use App\Repository\EventRepository;
 use App\Service\GeminiService;
 use App\Service\GeoService;
+use App\Service\LexicalGate;
 use App\Service\PineconeService;
 use App\Service\ScoringService;
 use App\Service\TemporalQueryParser;
@@ -32,15 +33,30 @@ POURQUOI : Offrir une recherche « Opale News » alignée sur le référentiel �
 
 final class HomeController extends AbstractController
 {
-    private const PRIMARY_MIN_TOP = 0.715;
-    private const PRIMARY_MIN_RESULT = 0.700;
+    // Seuils sémantiques (cosinus brut Pinecone, AVANT geo-boost).
+    // Calibration empirique sur Gemini embedding-001 + préfixe "Je cherche…" : la distribution réelle
+    // des cosinus est très tassée (vrais matches 0.65-0.78, bruit ambiant 0.66-0.74). Il y a
+    // chevauchement complet → impossible de séparer signal et bruit avec un seul seuil sémantique.
+    //
+    // Politique adoptée : un match est ACCEPTABLE si
+    //   - (filet lexical ✓ ET score >= LEXICAL_FLOOR) — confiance dans la correspondance textuelle ;
+    //   - OU score >= STRONG_SEMANTIC — cosinus fort, on tolère l'absence de mot-clé (synonyme/paraphrase).
+    // Tout match qui ne valide aucune des deux branches est rejeté.
+    private const LEXICAL_FLOOR = 0.62;
+    private const STRONG_SEMANTIC = 0.80;
+
+    // Le primary n'active que si un VRAI top existe (un match acceptable, score >= ce seuil).
+    private const PRIMARY_MIN_TOP = 0.70;
     private const PRIMARY_MAX_GAP = 0.04;
     private const PRIMARY_MAX_RESULTS = 3;
 
-    private const SECONDARY_MIN_TOP = 0.700;
-    private const SECONDARY_MIN_RESULT = 0.68;
+    // Activation du secondary dès qu'un match acceptable existe (le filtrage individuel se fait
+    // ensuite par `isMatchRelevant`).
+    private const SECONDARY_MIN_TOP = 0.62;
     private const SECONDARY_MAX_RESULTS = 5;
 
+    // Le geo-boost ne sert QUE pour le tri parmi les résultats déjà jugés pertinents (filtrage sur le
+    // semanticScore brut). Il ne peut plus faire entrer un résultat sous seuil dans la liste.
     private const PROXIMITY_BOOST_MAX = 0.06;
     private const PROXIMITY_RADIUS_KM = 50.0;
 
@@ -67,6 +83,7 @@ final class HomeController extends AbstractController
     public function __construct(
         private readonly EventRepository $events,
         private readonly ScoringService $scoring,
+        private readonly LexicalGate $lexicalGate,
         private readonly LoggerInterface $logger,
         private readonly UrlGeneratorInterface $urlGenerator,
     ) {}
@@ -217,7 +234,12 @@ final class HomeController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('signaler-event-' . $event->getId(), (string) $request->request->get('_token'))) {
-            throw $this->createAccessDeniedException('Jeton CSRF invalide.');
+            $this->addFlash('error', 'Lien invalide ou expiré. Merci de réessayer.');
+
+            return $this->redirectToRoute('app_event_show', [
+                'id' => $event->getId(),
+                'slug' => $event->getSlug(),
+            ]);
         }
 
         $notifications->sendAdminSignalementAlert($event);
@@ -288,6 +310,7 @@ final class HomeController extends AbstractController
                     $events,
                 );
                 $allRows = $this->sortRowsByDistance($allRows);
+                $allRows = $this->promoteFeaturedRows($allRows);
                 $offset = ($page - 1) * self::PAGE_SIZE;
                 $data = array_slice($allRows, $offset, self::PAGE_SIZE);
                 $hasMore = count($allRows) > $offset + self::PAGE_SIZE;
@@ -295,7 +318,7 @@ final class HomeController extends AbstractController
                 $events = $this->events->findByFilters(
                     $sort,
                     $page,
-                    self::PAGE_SIZE,
+                    self::PAGE_SIZE + 1,
                     $categories,
                     $period,
                     $freeOnly,
@@ -304,7 +327,10 @@ final class HomeController extends AbstractController
                     fn (Event $e): array => $this->buildEventRow($e, null, null, $userLat, $userLng, $geo),
                     $events,
                 );
-                $hasMore = count($data) >= self::PAGE_SIZE;
+                $hasMore = count($data) > self::PAGE_SIZE;
+                if ($hasMore) {
+                    $data = array_slice($data, 0, self::PAGE_SIZE);
+                }
             }
 
             return $this->json([
@@ -348,11 +374,15 @@ final class HomeController extends AbstractController
                     'query' => $query,
                 ]);
 
-                $events = $this->events->findByFilters($sort, $page, self::PAGE_SIZE);
+                $events = $this->events->findByFilters($sort, $page, self::PAGE_SIZE + 1, $categories, $period, $freeOnly);
                 $data = array_map(
                     fn (Event $event): array => $this->buildEventRow($event, null, null, $userLat, $userLng, $geo),
                     $events,
                 );
+                $hasMoreFallback = count($data) > self::PAGE_SIZE;
+                if ($hasMoreFallback) {
+                    $data = array_slice($data, 0, self::PAGE_SIZE);
+                }
 
                 return $this->json([
                     'primary' => $data,
@@ -361,15 +391,15 @@ final class HomeController extends AbstractController
                     'hasPosition' => $hasPosition,
                     'page' => $page,
                     'sort' => $sort,
-                    'hasMore' => count($data) >= self::PAGE_SIZE,
+                    'hasMore' => $hasMoreFallback,
                 ]);
             }
 
             $blended = $this->blendWithDistance($matches, $userLat, $userLng, $geo);
 
             $classified = $temporal !== null
-                ? $this->classifyMatchesWithDate($blended, $temporal)
-                : $this->classifyMatches($blended);
+                ? $this->classifyMatchesWithDate($blended, $temporal, $queryForEmbedding)
+                : $this->classifyMatches($blended, $queryForEmbedding);
 
             $temporalPayload = null;
             if ($temporal !== null) {
@@ -404,6 +434,11 @@ final class HomeController extends AbstractController
                 $primaryRows = $this->sortRowsByDistance($merged);
                 $secondaryRows = [];
             }
+
+            // Positionnement préférentiel : les événements « Incontournables » qui ont passé les filtres
+            // et le seuil sémantique remontent en tête de la liste principale (tri stable, PHP 8.0+).
+            $primaryRows = $this->promoteFeaturedRows($primaryRows);
+            $secondaryRows = $this->promoteFeaturedRows($secondaryRows);
 
             $paginatedPrimary = array_slice($primaryRows, $offset, self::PAGE_SIZE);
             $hasMore = count($paginatedPrimary) >= self::PAGE_SIZE
@@ -459,7 +494,7 @@ final class HomeController extends AbstractController
      *
      * @return array{primary: array<int, array<string, mixed>>, secondary: array<int, array<string, mixed>>}
      */
-    private function classifyMatchesWithDate(array $matches, array $temporal): array
+    private function classifyMatchesWithDate(array $matches, array $temporal, string $query): array
     {
         if ($matches === []) {
             return ['primary' => [], 'secondary' => []];
@@ -473,7 +508,6 @@ final class HomeController extends AbstractController
         }
 
         $inRange = [];
-        $outOfRange = [];
         foreach ($matches as $m) {
             $event = $eventsById[$m['id']] ?? null;
             if ($event === null) {
@@ -481,14 +515,14 @@ final class HomeController extends AbstractController
             }
             if ($this->eventInTemporalRange($event, $temporal)) {
                 $inRange[] = $m;
-            } else {
-                $outOfRange[] = $m;
             }
         }
 
+        // Primary : matches dans la fenêtre calendaire qui valident la politique de pertinence
+        // (filet lexical OU score sémantique fort), filtrés sur `semanticScore` brut.
         $primary = array_values(array_filter(
             $inRange,
-            static fn (array $m): bool => $m['score'] >= self::SECONDARY_MIN_RESULT,
+            fn (array $m): bool => $this->isMatchRelevant($m, $eventsById[$m['id']] ?? null, $query),
         ));
         $primary = array_slice($primary, 0, self::PRIMARY_MAX_RESULTS);
 
@@ -498,7 +532,7 @@ final class HomeController extends AbstractController
             if (in_array($m['id'], $primaryIds, true)) {
                 continue;
             }
-            if ($m['score'] < 0.60) {
+            if (!$this->isMatchRelevant($m, $eventsById[$m['id']] ?? null, $query)) {
                 continue;
             }
             $secondary[] = $m;
@@ -628,38 +662,44 @@ final class HomeController extends AbstractController
      *
      * @return array{primary: array<int, array<string, mixed>>, secondary: array<int, array<string, mixed>>}
      */
-    private function classifyMatches(array $matches): array
+    private function classifyMatches(array $matches, string $query): array
     {
         if ($matches === []) {
             return ['primary' => [], 'secondary' => []];
         }
 
-        $overallTop = $matches[0]['score'];
+        $eventsById = $this->loadEventsIndexedById($matches);
 
-        if ($overallTop < self::SECONDARY_MIN_TOP) {
+        // 1. On ne garde que les matches qui valident la politique de pertinence
+        //    (filet lexical OU score sémantique fort), filtrés sur le `semanticScore` brut
+        //    pour neutraliser toute contamination du geo-boost.
+        $relevant = array_values(array_filter(
+            $matches,
+            fn (array $m): bool => $this->isMatchRelevant($m, $eventsById[$m['id']] ?? null, $query),
+        ));
+
+        if ($relevant === []) {
             return ['primary' => [], 'secondary' => []];
         }
 
+        // 2. Top sémantique parmi les acceptables → décide d'activer la bande primary et
+        //    en fixe la fenêtre (cutoff resserré, max 3 résultats).
+        $relevantTop = $this->semanticTop($relevant);
         $primary = [];
-        if ($overallTop >= self::PRIMARY_MIN_TOP) {
-            $cutoff = max(
-                self::PRIMARY_MIN_RESULT,
-                $overallTop - self::PRIMARY_MAX_GAP,
-            );
+        if ($relevantTop >= self::PRIMARY_MIN_TOP) {
+            $cutoff = $relevantTop - self::PRIMARY_MAX_GAP;
             $primary = array_values(array_filter(
-                $matches,
-                static fn (array $m): bool => $m['score'] >= $cutoff,
+                $relevant,
+                static fn (array $m): bool => $m['semanticScore'] >= $cutoff,
             ));
             $primary = array_slice($primary, 0, self::PRIMARY_MAX_RESULTS);
         }
 
+        // 3. Secondary = acceptables restants.
         $primaryIds = array_column($primary, 'id');
         $secondary = [];
-        foreach ($matches as $m) {
+        foreach ($relevant as $m) {
             if (in_array($m['id'], $primaryIds, true)) {
-                continue;
-            }
-            if ($m['score'] < self::SECONDARY_MIN_RESULT) {
                 continue;
             }
             $secondary[] = $m;
@@ -667,6 +707,69 @@ final class HomeController extends AbstractController
         $secondary = array_slice($secondary, 0, self::SECONDARY_MAX_RESULTS);
 
         return ['primary' => $primary, 'secondary' => $secondary];
+    }
+
+    /**
+     * Score sémantique max sur l'ensemble des matches (indépendant du tri par score combiné).
+     *
+     * @param array<array{semanticScore: float}> $matches
+     */
+    private function semanticTop(array $matches): float
+    {
+        $top = 0.0;
+        foreach ($matches as $m) {
+            if ($m['semanticScore'] > $top) {
+                $top = $m['semanticScore'];
+            }
+        }
+
+        return $top;
+    }
+
+    /**
+     * Hydrate les events nécessaires au filet lexical, indexés par id.
+     *
+     * @param array<array{id: int}> $matches
+     *
+     * @return array<int, Event>
+     */
+    private function loadEventsIndexedById(array $matches): array
+    {
+        $ids = array_map(static fn (array $m): int => $m['id'], $matches);
+        $events = $this->events->findByIdsPreservingOrder($ids);
+
+        $byId = [];
+        foreach ($events as $event) {
+            $byId[$event->getId()] = $event;
+        }
+
+        return $byId;
+    }
+
+    /**
+     * Politique unifiée de pertinence :
+     *  - (filet lexical ✓ ET score >= LEXICAL_FLOOR)
+     *  - OU score >= STRONG_SEMANTIC (cosinus très fort, on tolère l'absence de mot-clé).
+     *
+     * @param array{semanticScore: float} $match
+     */
+    private function isMatchRelevant(array $match, ?Event $event, string $query): bool
+    {
+        if ($event === null) {
+            return false;
+        }
+
+        $score = $match['semanticScore'];
+
+        if ($score >= self::STRONG_SEMANTIC) {
+            return true;
+        }
+
+        if ($score < self::LEXICAL_FLOOR) {
+            return false;
+        }
+
+        return $this->lexicalGate->eventMatchesQuery($event, $query);
     }
 
     /**
@@ -871,6 +974,33 @@ final class HomeController extends AbstractController
         });
 
         return $rows;
+    }
+
+    /**
+     * Remonte les événements « Incontournables » (`featured === true`) en tête de liste, sans toucher
+     * à l'ordre relatif des autres rows. Le tri reste cohérent avec la requête : on ne fait
+     * remonter que des featured qui ont déjà passé les filtres et le seuil de pertinence.
+     *
+     * @param list<array<string, mixed>> $rows
+     * @return list<array<string, mixed>>
+     */
+    private function promoteFeaturedRows(array $rows): array
+    {
+        if ($rows === []) {
+            return [];
+        }
+
+        $featured = [];
+        $others = [];
+        foreach ($rows as $row) {
+            if (!empty($row['featured'])) {
+                $featured[] = $row;
+            } else {
+                $others[] = $row;
+            }
+        }
+
+        return array_merge($featured, $others);
     }
 
     private function buildMapMarkersFromRows(array $rows): array

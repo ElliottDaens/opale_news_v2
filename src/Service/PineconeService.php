@@ -26,21 +26,35 @@ final class PineconeService
     ) {}
 
     /**
-     * @param float[] $vector
+     * @param float[]              $vector
+     * @param array<string, mixed> $metadata Payload Pinecone (ex. `['featured' => true]`) — vide = pas de metadata.
      */
-    public function upsert(string $id, array $vector): void
+    public function upsert(string $id, array $vector, array $metadata = []): void
     {
-        $this->httpClient->request('POST', $this->indexUrl . '/vectors/upsert', [
+        $vectorPayload = ['id' => $id, 'values' => $vector];
+        if ($metadata !== []) {
+            $vectorPayload['metadata'] = $metadata;
+        }
+
+        $response = $this->httpClient->request('POST', $this->indexUrl . '/vectors/upsert', [
             'headers' => [
                 'Api-Key' => $this->apiKey,
                 'X-Pinecone-API-Version' => '2024-07',
             ],
             'json' => [
-                'vectors' => [
-                    ['id' => $id, 'values' => $vector],
-                ],
+                'vectors' => [$vectorPayload],
             ],
         ]);
+
+        $statusCode = $response->getStatusCode();
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new \RuntimeException(sprintf(
+                'Pinecone upsert failed for vector "%s": HTTP %d — %s',
+                $id,
+                $statusCode,
+                $response->getContent(false),
+            ));
+        }
     }
 
     public function deleteAll(): void

@@ -336,13 +336,23 @@ POURQUOI : Référencement Google Events, partages riches Facebook/X/LinkedIn, f
                     <h2 class="event-panel__title">Organisateur</h2>
                     <div class="event-organizer">
                         <div class="event-organizer__name">{{ event.nomOrganisateur }}</div>
-                        <a class="event-organizer__cta" href="mailto:{{ event.emailContact }}?subject={{ ('Information sur ' ~ event.titre)|url_encode }}">
+                        {% set ep = event.emailContact|split('@') %}
+                        <button type="button"
+                                class="event-organizer__cta js-contact-btn"
+                                data-u="{{ ep[0] }}"
+                                data-d="{{ ep|last }}"
+                                data-s="{{ ('Information sur ' ~ event.titre)|url_encode }}">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                                 <polyline points="22,6 12,13 2,6"/>
                             </svg>
                             Contacter
-                        </a>
+                        </button>
+                        <script>
+                        document.querySelector('.js-contact-btn').addEventListener('click', function () {
+                            window.location.href = 'mailto:' + this.dataset.u + '@' + this.dataset.d + '?subject=' + this.dataset.s;
+                        });
+                        </script>
                     </div>
                 </section>
 
@@ -557,6 +567,22 @@ POURQUOI : Référencement Google Events, partages riches Facebook/X/LinkedIn, f
             })();
         </script>
     {% endif %}
+
+    {# Umami : tracking custom "Voir événement" avec titre et id pour stats par événement #}
+    {% if umami_website_id is defined and umami_website_id is not empty %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof umami !== 'undefined') {
+                umami.track('Voir événement', {
+                    id: {{ event.id }},
+                    titre: {{ event.titre|json_encode|raw }},
+                    categorie: {{ event.categorie|json_encode|raw }},
+                    ville: {{ event.ville|json_encode|raw }}
+                });
+            }
+        });
+    </script>
+    {% endif %}
 {% endblock %}
 
 {% block jsonld %}
@@ -583,8 +609,7 @@ POURQUOI : Référencement Google Events, partages riches Facebook/X/LinkedIn, f
         },
         'organizer': {
             '@type': 'Organization',
-            'name': event.nomOrganisateur,
-            'email': event.emailContact
+            'name': event.nomOrganisateur
         },
         'offers': {
             '@type': 'Offer',

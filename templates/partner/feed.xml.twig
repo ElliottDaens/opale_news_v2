@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+     xmlns:atom="http://www.w3.org/2005/Atom"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Agenda Opale News — {{ radius|number_format(0) }} km</title>
+    <link>{{ siteUrl }}</link>
+    <description>{{ items|length }} événement(s) dans les {{ days }} prochains jours, rayon {{ radius|number_format(0) }} km. Propulsé par Opale News.</description>
+    <language>fr-FR</language>
+    <copyright>Opale News</copyright>
+    <lastBuildDate>{{ generatedAt|date('D, d M Y H:i:s O', 'Europe/Paris') }}</lastBuildDate>
+    <ttl>60</ttl>
+    <atom:link href="{{ feedUrl }}" rel="self" type="application/rss+xml" />
+
+    {% for item in items %}
+    <item>
+      <title>{{ (item.event.featured ? '[INCONTOURNABLE] ' : '') ~ item.event.titre }}</title>
+      <link>{{ item.url }}</link>
+      <guid isPermaLink="true">{{ item.url }}</guid>
+      <pubDate>{{ item.event.startDate|date('D, d M Y 00:00:00 O', 'Europe/Paris') }}</pubDate>
+      <dc:date>{{ item.event.startDate|date('Y-m-d') }}</dc:date>
+      <category>{{ item.event.categorie }}</category>
+      <description>{% autoescape false %}<![CDATA[
+        {% if item.event.featured %}<p><strong>⭐ Événement incontournable</strong></p>{% endif %}
+        <p><strong>{{ item.event.formatDateRange }}</strong>{% if item.event.startTime %} à {{ item.event.startTime|date('H:i') }}{% endif %}</p>
+        <p>📍 {{ item.event.adresse }}, {{ item.event.codePostal }} {{ item.event.ville }} <em>({{ item.distanceKm }} km de chez vous)</em></p>
+        <p>💶 {{ item.event.prixDisplay }}</p>
+        <p>{{ item.event.description|slice(0, 350) }}{% if item.event.description|length > 350 %}…{% endif %}</p>
+        {% if item.event.imageCouverture %}<p><img src="{{ absolute_url(asset('uploads/' ~ item.event.imageCouverture)) }}" alt="{{ item.event.titre }}" style="max-width:100%"></p>{% endif %}
+        <p><a href="{{ item.url }}">→ Voir tous les détails sur Opale News</a></p>
+      ]]>{% endautoescape %}</description>
+      {% if item.event.imageCouverture %}
+      <enclosure url="{{ absolute_url(asset('uploads/' ~ item.event.imageCouverture)) }}" type="image/jpeg" length="0" />
+      {% endif %}
+    </item>
+    {% endfor %}
+
+  </channel>
+</rss>

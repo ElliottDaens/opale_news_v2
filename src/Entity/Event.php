@@ -102,6 +102,9 @@ class Event
     #[ORM\Column]
     private bool $indexed = false;
 
+    #[ORM\Column(name: 'is_featured', options: ['default' => false])]
+    private bool $featured = false;
+
     #[ORM\Column(length: 64, nullable: true)]
     private ?string $updateToken = null;
 
@@ -133,7 +136,28 @@ class Event
 
     public function getPrix(): ?string { return $this->prix; }
     public function getPrixDisplay(): string { return $this->prix ?? 'Gratuit'; }
-    public function setPrix(?string $v): self { $this->prix = $v === '' ? null : $v; return $this; }
+    public function setPrix(?string $v): self
+    {
+        if ($v === null || $v === '') {
+            $this->prix = null;
+            return $this;
+        }
+
+        $v = trim(rtrim(trim($v), '€'));
+        $v = str_replace(',', '.', $v);
+        $num = (float) $v;
+
+        if ($num <= 0.0) {
+            $this->prix = null;
+            return $this;
+        }
+
+        $this->prix = $num === (float) (int) $num
+            ? (int) $num . '€'
+            : number_format($num, 2, ',', '') . '€';
+
+        return $this;
+    }
 
     public function getCategorie(): string { return $this->categorie; }
     public function setCategorie(string $v): self { $this->categorie = $v; return $this; }
@@ -190,6 +214,9 @@ class Event
 
     public function isIndexed(): bool { return $this->indexed; }
     public function setIndexed(bool $v): self { $this->indexed = $v; return $this; }
+
+    public function isFeatured(): bool { return $this->featured; }
+    public function setFeatured(bool $v): self { $this->featured = $v; return $this; }
 
     public function getUpdateToken(): ?string { return $this->updateToken; }
 
@@ -390,6 +417,7 @@ class Event
             'imageCouverture' => $this->imageCouverture,
             'imageBanniere' => $this->imageBanniere,
             'status' => $this->status->value,
+            'featured' => $this->featured,
             'date' => $this->formatDateRange(),
         ];
     }

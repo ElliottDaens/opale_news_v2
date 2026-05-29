@@ -36,6 +36,7 @@ POURQUOI : Point d’entrée standard du squelette Symfony.
         {% block body %}{% endblock %}
 
         {# Bandeau de consentement RGPD : conditionne le chargement de Google Maps & reCAPTCHA v3 #}
+        {% include '_partials/_umami.html.twig' %}
         {% include '_partials/_cookie_consent.html.twig' %}
     </body>
 </html>

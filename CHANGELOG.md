@@ -5,6 +5,25 @@ Toutes les modifications notables de ce projet sont documentées dans ce fichier
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/),
 et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2.3.0] - 2026-05-27
+
+### Ajouté
+
+- Intégration **Umami** (analytics auto-hébergé) : stack Docker dev/prod, script de tracking, compteurs de vues dans l’admin.
+- Flux RSS partenaires (`/partner/feed`) et page générateur de widget (`/pour-mon-site`).
+- Page **À propos** (`/a-propos`) et image Open Graph par défaut (`public/img/og-default.svg`).
+- Colonne `is_featured` (« Incontournables ») avec migration Doctrine et mise en avant en liste.
+- Service `LexicalGate` pour filtrer les faux positifs sémantiques sur requêtes courtes.
+- Commande CLI `app:debug:search` pour diagnostiquer le pipeline de recherche.
+
+### Modifié
+
+- Améliorations du moteur de recherche (`HomeController`, `PineconeService`, `EventRepository`).
+- Mise à jour des pages légales (mentions, confidentialité) et métadonnées Twig (OG).
+- Styles accueil, soumission, admin ; Caddy reverse-proxy Umami en production.
+
+[2.3.0]: https://github.com/ElliottDaens/opale_news_v2/releases/tag/v2.3.0
+
 ## [2.2.0] - 2026-05-26
 
 ### Ajouté

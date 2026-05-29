@@ -15,7 +15,33 @@ POURQUOI : Cœur produit visiteur — découverte d’événements sans recharge
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Opale News — L'agenda de la Côte d'Opale</title>
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}?v=distance-fix-2">
+
+    {# ── SEO ── #}
+    {% set _baseUrl = app.request.schemeAndHttpHost %}
+    {% set _homeUrl = _baseUrl ~ path('app_home') %}
+    {% set _desc = "Découvrez concerts, marchés, festivals, sports et sorties en famille sur la Côte d'Opale. Agenda local mis à jour en temps réel." %}
+    <meta name="description" content="{{ _desc }}">
+    <link rel="canonical" href="{{ _homeUrl }}">
+
+    {# ── OpenGraph ── #}
+    <meta property="og:type"        content="website">
+    <meta property="og:locale"      content="fr_FR">
+    <meta property="og:site_name"   content="Opale News">
+    <meta property="og:title"       content="Opale News — L'agenda de la Côte d'Opale">
+    <meta property="og:description" content="{{ _desc }}">
+    <meta property="og:url"         content="{{ _homeUrl }}">
+    <meta property="og:image"       content="{{ _baseUrl ~ asset('img/og-default.jpg') }}">
+    <meta property="og:image:width"  content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt"   content="Opale News — agenda de la Côte d'Opale">
+
+    {# ── Twitter Card ── #}
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="Opale News — L'agenda de la Côte d'Opale">
+    <meta name="twitter:description" content="{{ _desc }}">
+    <meta name="twitter:image"       content="{{ _baseUrl ~ asset('img/og-default.jpg') }}">
+
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 </head>
 <body>
@@ -195,7 +221,13 @@ POURQUOI : Cœur produit visiteur — découverte d’événements sans recharge
             <div class="events-grid" id="events-grid">
                 {% for event in events %}
                     <a href="{{ path('app_event_show', { id: event.id, slug: event.slug }) }}" class="event-card-link">
-                        <article class="event-card" data-event-id="{{ event.id }}">
+                        <article class="event-card{% if event.featured %} event-card--featured{% endif %}" data-event-id="{{ event.id }}">
+                            {% if event.featured %}
+                                <span class="event-card__featured-badge" aria-label="Événement incontournable">
+                                    <span class="event-card__featured-icon" aria-hidden="true">✦</span>
+                                    Incontournable
+                                </span>
+                            {% endif %}
                             <div class="event-card__header">
                                 <span class="event-card__category">{{ event.categorie }}</span>
                                 <span class="event-card__date">{{ event.formatDateRange }}</span>
@@ -254,10 +286,11 @@ POURQUOI : Cœur produit visiteur — découverte d’événements sans recharge
     </script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
     <script src="{{ asset('js/motion.js') }}" defer></script>
-    <script src="{{ asset('js/home-map.js') }}?v=distance-fix-2" defer></script>
-    <script src="{{ asset('js/search.js') }}?v=distance-fix-2" defer></script>
+    <script src="{{ asset('js/home-map.js') }}" defer></script>
+    <script src="{{ asset('js/search.js') }}" defer></script>
 
     {# Bandeau de consentement RGPD (cohérence sur tout le site public) #}
+    {% include '_partials/_umami.html.twig' %}
     {% include '_partials/_cookie_consent.html.twig' %}
 </body>
 </html>

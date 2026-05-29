@@ -36,6 +36,12 @@ final class SystemController extends AbstractController
         return new JsonResponse(['status' => 'OK']);
     }
 
+    #[Route('/a-propos', name: 'app_about', methods: ['GET'])]
+    public function about(): Response
+    {
+        return $this->render('about/index.html.twig');
+    }
+
     #[Route('/mentions-legales', name: 'app_legal_notice', methods: ['GET'])]
     public function legalNotice(): Response
     {
@@ -107,7 +113,7 @@ final class SystemController extends AbstractController
             $writer->endElement();
         }
 
-        foreach (['app_legal_notice', 'app_privacy_policy', 'app_event_submit'] as $route) {
+        foreach (['app_about', 'app_legal_notice', 'app_privacy_policy', 'app_event_submit'] as $route) {
             $writer->startElement('url');
             $writer->writeElement('loc', $urlGenerator->generate($route, [], UrlGeneratorInterface::ABSOLUTE_URL));
             $writer->writeElement('changefreq', 'monthly');

@@ -46,7 +46,11 @@ final class EventIndexer
                 $event->getEmbeddingText(),
                 GeminiService::TASK_DOCUMENT,
             );
-            $this->pinecone->upsert((string) $event->getId(), $vector);
+            $this->pinecone->upsert(
+                (string) $event->getId(),
+                $vector,
+                ['featured' => $event->isFeatured()],
+            );
             $event->setIndexed(true);
             $this->em->flush();
         } catch (\Throwable $e) {

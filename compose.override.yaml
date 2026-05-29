@@ -15,6 +15,11 @@ services:
       - "5432"
 ###< doctrine/doctrine-bundle ###
 
+  # Umami : UI analytics accessible sur http://localhost:3001
+  umami:
+    ports:
+      - "3001:3000"
+
 ###> symfony/mailer ###
   # Mailpit : SMTP 1025, UI 8025.
   mailer:

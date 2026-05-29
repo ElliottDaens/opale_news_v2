@@ -3,92 +3,104 @@ legal/politique-de-confidentialite.html.twig
 
 QUOI : Politique de confidentialité / RGPD (collecte, droits, cookies, contact).
 
-COMMENT : Étend `base.html.twig` ; texte informatif, pas de formulaire.
+COMMENT : HTML autonome avec header/footer partagés et layout .prose-page.
 
 OÙ : Route `app_privacy_policy` (`SystemController::privacyPolicy`).
 
 POURQUOI : Transparence sur le traitement des données des visiteurs et soumissionnaires.
 #}
-{% extends 'base.html.twig' %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, follow">
+    <title>Politique de confidentialité — Opale News</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+</head>
+<body>
+    {% include '_partials/_site_header.html.twig' %}
 
-{% block title %}Politique de confidentialité — Opale News{% endblock %}
+    <main class="prose-page">
+        <h1>Politique de confidentialité</h1>
 
-{% block body %}
-<main class="legal-page">
-    <h1>Politique de confidentialité</h1>
+        <p>
+            Cette politique décrit la manière dont Opale News collecte et traite vos
+            données personnelles, conformément au Règlement Général sur la Protection
+            des Données (RGPD) et à la loi Informatique et Libertés.
+        </p>
 
-    <p>
-        Cette politique décrit la manière dont Opale News collecte et traite vos
-        données personnelles, conformément au Règlement Général sur la Protection
-        des Données (RGPD) et à la loi Informatique et Libertés.
-    </p>
+        <h2>Responsable du traitement</h2>
+        <p>
+            Opale News, dont les coordonnées figurent dans les
+            <a href="{{ path('app_legal_notice') }}">mentions légales</a>.
+        </p>
 
-    <h2>Responsable du traitement</h2>
-    <p>
-        Opale News, dont les coordonnées figurent dans les
-        <a href="{{ path('app_legal_notice') }}">mentions légales</a>.
-    </p>
+        <h2>Données collectées</h2>
+        <ul>
+            <li>
+                <strong>Adresse email</strong> : lors de la soumission d'un événement
+                par un organisateur, afin de pouvoir contacter celui-ci en cas de
+                besoin (modération, demande de précision).
+            </li>
+            <li>
+                <strong>Informations événement</strong> : titre, description, lieu,
+                dates fournies par l'organisateur et destinées à être publiées.
+            </li>
+            <li>
+                <strong>Géolocalisation</strong> : utilisée uniquement si vous
+                l'autorisez explicitement dans votre navigateur, pour trier les
+                résultats par proximité. Aucune coordonnée n'est stockée côté serveur.
+            </li>
+        </ul>
 
-    <h2>Données collectées</h2>
-    <ul>
-        <li>
-            <strong>Adresse email</strong> : lors de la soumission d'un événement
-            par un organisateur, afin de pouvoir contacter celui-ci en cas de
-            besoin (modération, demande de précision).
-        </li>
-        <li>
-            <strong>Informations événement</strong> : titre, description, lieu,
-            dates fournies par l'organisateur et destinées à être publiées.
-        </li>
-        <li>
-            <strong>Géolocalisation</strong> : utilisée uniquement si vous
-            l'autorisez explicitement dans votre navigateur, pour trier les
-            résultats par proximité. Aucune coordonnée n'est stockée côté serveur.
-        </li>
-    </ul>
+        <h2>Cookies et services tiers</h2>
+        <p>
+            Le site utilise les services tiers suivants, susceptibles de déposer des
+            cookies sur votre terminal&nbsp;:
+        </p>
+        <ul>
+            <li>
+                <strong>Google reCAPTCHA</strong> : protection des formulaires contre
+                les soumissions automatisées. Google peut collecter des informations
+                techniques (adresse IP, comportement de navigation) à des fins de
+                détection des robots.
+            </li>
+            <li>
+                <strong>Google Maps</strong> : affichage cartographique des lieux
+                d'événements. Le chargement de la carte implique une connexion aux
+                serveurs Google.
+            </li>
+        </ul>
+        <p>
+            L'utilisation de ces services est soumise aux conditions d'utilisation et
+            à la politique de confidentialité de Google.
+        </p>
 
-    <h2>Cookies et services tiers</h2>
-    <p>
-        Le site utilise les services tiers suivants, susceptibles de déposer des
-        cookies sur votre terminal :
-    </p>
-    <ul>
-        <li>
-            <strong>Google reCAPTCHA</strong> : protection des formulaires contre
-            les soumissions automatisées. Google peut collecter des informations
-            techniques (adresse IP, comportement de navigation) à des fins de
-            détection des robots.
-        </li>
-        <li>
-            <strong>Google Maps</strong> : affichage cartographique des lieux
-            d'événements. Le chargement de la carte implique une connexion aux
-            serveurs Google.
-        </li>
-    </ul>
-    <p>
-        L'utilisation de ces services est soumise aux conditions d'utilisation et
-        à la politique de confidentialité de Google.
-    </p>
+        <h2>Durée de conservation</h2>
+        <p>
+            Les emails des organisateurs sont conservés tant que les événements
+            associés restent publiés, puis supprimés dans un délai raisonnable après
+            la fin de l'événement.
+        </p>
 
-    <h2>Durée de conservation</h2>
-    <p>
-        Les emails des organisateurs sont conservés tant que les événements
-        associés restent publiés, puis supprimés dans un délai raisonnable après
-        la fin de l'événement.
-    </p>
+        <h2>Vos droits</h2>
+        <p>
+            Conformément au RGPD, vous disposez d'un droit d'accès, de rectification,
+            d'effacement, de limitation, de portabilité et d'opposition concernant
+            vos données personnelles. Pour exercer ces droits, écrivez à
+            contact@opale-news.example.
+        </p>
+        <p>
+            En cas de litige, vous pouvez introduire une réclamation auprès de la
+            CNIL (<a href="https://www.cnil.fr" rel="noopener noreferrer">www.cnil.fr</a>).
+        </p>
 
-    <h2>Vos droits</h2>
-    <p>
-        Conformément au RGPD, vous disposez d'un droit d'accès, de rectification,
-        d'effacement, de limitation, de portabilité et d'opposition concernant
-        vos données personnelles. Pour exercer ces droits, écrivez à
-        contact@opale-news.example.
-    </p>
-    <p>
-        En cas de litige, vous pouvez introduire une réclamation auprès de la
-        CNIL (<a href="https://www.cnil.fr" rel="noopener noreferrer">www.cnil.fr</a>).
-    </p>
+        <p><a href="{{ path('app_home') }}" class="back-link">← Retour à l'accueil</a></p>
+    </main>
 
-    <p><a href="{{ path('app_home') }}">← Retour à l'accueil</a></p>
-</main>
-{% endblock %}
+    {% include '_partials/_site_footer.html.twig' %}
+    {% include '_partials/_umami.html.twig' %}
+    {% include '_partials/_cookie_consent.html.twig' %}
+</body>
+</html>

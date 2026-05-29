@@ -34,6 +34,17 @@ POURQUOI : Rassurer l’utilisateur et fermer le parcours sans ambiguïté.
                 Vous recevrez un message à l'adresse email indiquée si votre événement est validé ou
                 si nous avons besoin de précisions.
             </p>
+            {% if editUrl is defined and editUrl %}
+            <div class="thanks-edit-box">
+                <p class="thanks-edit-title">Besoin de corriger quelque chose ?</p>
+                <p class="thanks-message thanks-message--small">
+                    Voici votre <strong>lien d'édition personnel</strong> — il vous a aussi été envoyé par email.
+                    Il reste valable tant que votre événement est en attente de modération.
+                </p>
+                <a href="{{ editUrl }}" class="btn btn--ghost thanks-edit-link">Modifier ma proposition →</a>
+            </div>
+            {% endif %}
+
             <div class="thanks-actions">
                 <a href="{{ path('app_home') }}" class="btn btn--primary">Retour à l'agenda</a>
                 <a href="{{ path('app_event_submit') }}" class="btn btn--ghost">Proposer un autre événement</a>

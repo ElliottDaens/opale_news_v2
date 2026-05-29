@@ -180,6 +180,7 @@ POURQUOI : Collecte structurée avant modération humaine.
     <script src="{{ asset('js/form-submission.js') }}" defer></script>
 
     {# Bandeau de consentement RGPD — gère l'injection conditionnelle des scripts tiers #}
+    {% include '_partials/_umami.html.twig' %}
     {% include '_partials/_cookie_consent.html.twig' %}
 </body>
 </html>

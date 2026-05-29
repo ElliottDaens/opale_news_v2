@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\Event;
 use App\Service\GeminiTextService;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
@@ -50,10 +51,20 @@ final class EventSubmissionType extends AbstractType
                 'constraints' => [new Assert\NotBlank(), new Assert\Email()],
             ])
             ->add('prix', TextType::class, [
-                'label' => 'Prix (laissez vide pour "Gratuit")',
+                'label' => 'Prix (0 ou vide = gratuit)',
                 'required' => false,
-                'attr' => ['maxlength' => 60, 'placeholder' => 'Ex : 10€ ou 5€ adulte / 3€ enfant'],
-                'constraints' => [new Assert\Length(max: 60)],
+                'attr' => [
+                    'type' => 'number',
+                    'min' => '0',
+                    'step' => '0.01',
+                    'placeholder' => '0',
+                ],
+                'constraints' => [
+                    new Assert\Regex(
+                        pattern: '/^\d+([.,]\d{1,2})?$/',
+                        message: 'Montant invalide (ex : 10 ou 10,50).',
+                    ),
+                ],
             ])
             ->add('categorie', ChoiceType::class, [
                 'label' => 'Catégorie',
@@ -148,7 +159,7 @@ final class EventSubmissionType extends AbstractType
             ])
 
             ->add('website', TextType::class, [
-                'mapped' => false,
+                'mapped'   => false,
                 'required' => false,
                 'label' => false,
                 'attr' => [
@@ -158,6 +169,12 @@ final class EventSubmissionType extends AbstractType
                 ],
                 'row_attr' => ['class' => 'honeypot-field'],
             ]);
+
+        // Transformer : "10€" → "10" à l'affichage, "10" → setPrix gère le formatage
+        $builder->get('prix')->addModelTransformer(new CallbackTransformer(
+            static fn (?string $v): ?string => $v !== null ? rtrim(trim($v), '€') : null,
+            static fn (?string $v): ?string => $v,
+        ));
     }
 
     public function configureOptions(OptionsResolver $resolver): void

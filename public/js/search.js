@@ -296,6 +296,7 @@
     const renderCard = (event, { tier = 'primary' } = {}) => {
         const hasPertinence = typeof event.pertinence === 'number';
         const hasDistance = typeof event.distanceKm === 'number';
+        const isFeatured = event.featured === true;
 
         const pertinenceBadge = hasPertinence
             ? `<span class="event-card__pertinence ${pertinenceClass(event.pertinence)}" title="Pertinence sémantique : ${event.pertinence}%">${event.pertinence}<span class="event-card__pertinence__percent">%</span></span>`
@@ -305,7 +306,12 @@
             ? `<span class="event-card__distance" title="Distance à vol d'oiseau">${formatDistance(event.distanceKm)}</span>`
             : '';
 
+        const featuredBadge = isFeatured
+            ? `<span class="event-card__featured-badge" aria-label="Événement incontournable"><span class="event-card__featured-icon" aria-hidden="true">✦</span>Incontournable</span>`
+            : '';
+
         const tierClass = tier === 'secondary' ? ' event-card--secondary' : '';
+        const featuredClass = isFeatured ? ' event-card--featured' : '';
         const detailUrl = event.url
             || (event.slug
                 ? `/evenement/${encodeURIComponent(event.id)}/${encodeURIComponent(event.slug)}`
@@ -313,7 +319,8 @@
 
         return `
         <a href="${escapeHtml(detailUrl)}" class="event-card-link">
-        <article class="event-card${hasPertinence ? ' event-card--scored' : ''}${tierClass}" data-event-id="${escapeHtml(event.id)}">
+        <article class="event-card${hasPertinence ? ' event-card--scored' : ''}${tierClass}${featuredClass}" data-event-id="${escapeHtml(event.id)}">
+            ${featuredBadge}
             ${pertinenceBadge}
             <div class="event-card__header">
                 <span class="event-card__category">${escapeHtml(event.categorie)}</span>

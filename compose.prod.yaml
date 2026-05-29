@@ -108,6 +108,46 @@ services:
     networks:
       - backend
 
+  # Analytics — Umami (cookieless, RGPD-friendly).
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    restart: unless-stopped
+    init: true
+    depends_on:
+      umami_db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:?UMAMI_DB_PASSWORD manquant}@umami_db:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET:?UMAMI_APP_SECRET manquant}
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/heartbeat || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Base dédiée Umami — isolée de la base applicative.
+  umami_db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD:?UMAMI_DB_PASSWORD manquant}
+    volumes:
+      - umami_db_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # Postgres — volume + backups ; réseau interne uniquement.
   database:
     image: postgres:${POSTGRES_VERSION:-16}-alpine
@@ -141,6 +181,8 @@ volumes:
   caddy_data:
     driver: local
   caddy_config:
+    driver: local
+  umami_db_data:
     driver: local
 
 networks:

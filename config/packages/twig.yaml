@@ -10,6 +10,9 @@
 
 twig:
     file_name_pattern: '*.twig'
+    globals:
+        umami_website_id: '%env(default::UMAMI_WEBSITE_ID)%'
+        umami_script_url: '%env(default::UMAMI_SCRIPT_URL)%'
 
 when@test:
     twig:

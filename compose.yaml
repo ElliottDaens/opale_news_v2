@@ -58,9 +58,36 @@ services:
       # - ./docker/db/data:/var/lib/postgresql/data:rw
 ###< doctrine/doctrine-bundle ###
 
+  # Analytics Umami — accès local : http://localhost:3001
+  umami:
+    image: ghcr.io/umami-software/umami:postgresql-latest
+    depends_on:
+      umami_db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://umami:umami@umami_db:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: dev-secret-change-in-production
+
+  umami_db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: umami
+    volumes:
+      - umami_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 volumes:
 ###> doctrine/doctrine-bundle ###
   database_data:
 ###< doctrine/doctrine-bundle ###
   php_var:
   php_vendor:
+  umami_db_data:

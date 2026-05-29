@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intégrez l'agenda sur votre site — Opale News</title>
+    <meta name="description" content="Affichez automatiquement les événements proches de chez vous sur votre site ou blog. Flux RSS mis à jour chaque heure.">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+    <style>
+        .partner-page {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: var(--space-lg) var(--space-sm);
+        }
+        .partner-hero {
+            text-align: center;
+            margin-bottom: var(--space-lg);
+        }
+        .partner-hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(1.6rem, 4vw, 2.2rem);
+            color: var(--c-marine);
+            margin: 0 0 var(--space-sm);
+        }
+        .partner-hero p {
+            font-size: 1.1rem;
+            color: var(--c-texte-doux);
+            margin: 0;
+        }
+        .partner-steps {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-lg);
+        }
+        .partner-card {
+            background: var(--c-blanc);
+            border: 1px solid var(--c-bordure);
+            border-radius: var(--radius-lg);
+            padding: var(--space-md) var(--space-md) var(--space-lg);
+            box-shadow: var(--shadow-sm);
+        }
+        .partner-card h2 {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            color: var(--c-marine);
+            margin: 0 0 var(--space-md);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .partner-card h2 .step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: var(--c-mer);
+            color: white;
+            border-radius: 50%;
+            font-size: 0.85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .partner-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-sm);
+        }
+        @media (max-width: 520px) {
+            .partner-form-row { grid-template-columns: 1fr; }
+        }
+        .partner-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            position: relative;
+        }
+        .partner-field label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--c-texte);
+        }
+        .partner-field input,
+        .partner-field select {
+            padding: 0.65rem 0.875rem;
+            border: 1.5px solid var(--c-bordure);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-base);
+            font-size: 0.95rem;
+            color: var(--c-texte);
+            background: var(--c-sable-clair);
+            transition: border-color var(--duration-fast);
+            width: 100%;
+        }
+        .partner-field input:focus,
+        .partner-field select:focus {
+            outline: none;
+            border-color: var(--c-mer);
+            box-shadow: 0 0 0 3px var(--c-focus);
+        }
+        .partner-field--address {
+            grid-column: 1 / -1;
+            margin-bottom: var(--space-sm);
+        }
+        .partner-suggestions {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: var(--c-blanc);
+            border: 1.5px solid var(--c-mer);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-md);
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            z-index: 100;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+        .partner-suggestions li {
+            padding: 0.7rem 0.875rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--c-bordure);
+            transition: background var(--duration-fast);
+        }
+        .partner-suggestions li:last-child { border-bottom: none; }
+        .partner-suggestions li:hover { background: var(--c-sable); }
+        .partner-error {
+            font-size: 0.82rem;
+            color: var(--c-corail-fonce);
+            margin-top: 0.25rem;
+            display: none;
+        }
+        .partner-error.visible { display: block; }
+        .btn-generate {
+            margin-top: var(--space-md);
+            width: 100%;
+            padding: 0.85rem;
+            background: var(--c-mer);
+            color: var(--c-blanc);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background var(--duration-fast), transform var(--duration-fast);
+        }
+        .btn-generate:hover { background: var(--c-marine); transform: translateY(-1px); }
+        .btn-generate:active { transform: translateY(0); }
+
+        /* Résultat */
+        .partner-result {
+            margin-top: var(--space-md);
+            background: #f0f8ff;
+            border: 1.5px solid var(--c-mer-clair);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+        }
+        .partner-result p {
+            font-size: 0.9rem;
+            color: var(--c-texte-doux);
+            margin: 0 0 0.75rem;
+        }
+        .partner-url-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
+        .partner-url-input {
+            flex: 1;
+            padding: 0.65rem 0.875rem;
+            border: 1.5px solid var(--c-bordure);
+            border-radius: var(--radius-sm);
+            font-family: monospace;
+            font-size: 0.82rem;
+            color: var(--c-mer);
+            background: var(--c-blanc);
+            cursor: text;
+        }
+        .btn-copy {
+            padding: 0.65rem 1rem;
+            background: var(--c-marine);
+            color: var(--c-blanc);
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-base);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background var(--duration-fast);
+            flex-shrink: 0;
+        }
+        .btn-copy:hover { background: var(--c-corail); }
+        .btn-copy.copied { background: #2e7d32; }
+
+        /* Étape 2 — Instructions CMS */
+        .cms-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .cms-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            font-size: 0.9rem;
+            color: var(--c-texte);
+        }
+        .cms-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            margin-top: 0.05rem;
+        }
+        .cms-list strong { color: var(--c-marine); }
+        .cms-list span { color: var(--c-texte-doux); }
+    </style>
+</head>
+<body>
+    {% include '_partials/_site_header.html.twig' with { show_cta: true } %}
+
+    <main class="partner-page">
+        <a href="{{ path('app_home') }}" class="back-link">← Retour aux événements</a>
+
+        <div class="partner-hero">
+            <h1>Diffusez l'agenda local sur votre site</h1>
+            <p>Camping, hôtel, office de tourisme&nbsp;? Affichez automatiquement les événements proches de chez vous, mis à jour chaque heure.</p>
+        </div>
+
+        <div class="partner-steps">
+
+            {# ─── Étape 1 : configurateur ─── #}
+            <div class="partner-card">
+                <h2><span class="step-badge">1</span> Configurez votre flux</h2>
+
+                <div class="partner-field partner-field--address">
+                    <label for="partner-address">Votre adresse</label>
+                    <input
+                        type="text"
+                        id="partner-address"
+                        autocomplete="off"
+                        placeholder="Ex : Avenue Saint-Jean, Le Touquet"
+                        aria-autocomplete="list"
+                        aria-controls="partner-suggestions"
+                    >
+                    <ul id="partner-suggestions" class="partner-suggestions" hidden role="listbox" aria-label="Suggestions d'adresse"></ul>
+                    <p id="partner-address-error" class="partner-error">Sélectionnez une adresse dans la liste.</p>
+                </div>
+
+                <div class="partner-form-row">
+                    <div class="partner-field">
+                        <label for="partner-radius">Rayon</label>
+                        <select id="partner-radius">
+                            <option value="5">5 km</option>
+                            <option value="10">10 km</option>
+                            <option value="15">15 km</option>
+                            <option value="20" selected>20 km</option>
+                            <option value="30">30 km</option>
+                            <option value="50">50 km</option>
+                        </select>
+                    </div>
+                    <div class="partner-field">
+                        <label for="partner-days">Horizon</label>
+                        <select id="partner-days">
+                            <option value="7" selected>7 jours (semaine)</option>
+                            <option value="14">14 jours (2 semaines)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn-generate" id="partner-generate" type="button">
+                    Générer mon flux RSS
+                </button>
+
+                <div class="partner-result" id="partner-result" hidden>
+                    <p>Votre URL RSS — copiez-la et collez-la dans votre plugin :</p>
+                    <div class="partner-url-row">
+                        <input type="text" id="partner-url" class="partner-url-input" readonly aria-label="URL du flux RSS">
+                        <button type="button" class="btn-copy" id="partner-copy">Copier</button>
+                    </div>
+                </div>
+            </div>
+
+            {# ─── Étape 2 : instructions CMS ─── #}
+            <div class="partner-card">
+                <h2><span class="step-badge">2</span> Intégrez à votre CMS</h2>
+                <ul class="cms-list">
+                    <li>
+                        <span class="cms-icon">🔵</span>
+                        <div><strong>WordPress</strong><br><span>Installez <em>WP RSS Aggregator</em> (gratuit), collez l'URL dans « Flux RSS », choisissez le nombre d'items à afficher.</span></div>
+                    </li>
+                    <li>
+                        <span class="cms-icon">🟠</span>
+                        <div><strong>Wix / Squarespace</strong><br><span>Ajoutez un bloc « Blog RSS » ou « Flux d'actualités » et collez l'URL dans le champ prévu.</span></div>
+                    </li>
+                    <li>
+                        <span class="cms-icon">🟡</span>
+                        <div><strong>Joomla</strong><br><span>Utilisez le module natif « Flux de syndicat » → collez l'URL RSS.</span></div>
+                    </li>
+                    <li>
+                        <span class="cms-icon">🟢</span>
+                        <div><strong>Développeur</strong><br><span>Appelez directement l'URL, parsez le XML. Chaque <code>&lt;item&gt;</code> contient titre, date, adresse, description et lien vers Opale News.</span></div>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+    </main>
+
+    {% include '_partials/_site_footer.html.twig' %}
+
+    <script>
+    (function () {
+        const addressInput = document.getElementById('partner-address');
+        const suggestionsBox = document.getElementById('partner-suggestions');
+        const addressError = document.getElementById('partner-address-error');
+        const generateBtn = document.getElementById('partner-generate');
+        const resultBox = document.getElementById('partner-result');
+        const urlInput = document.getElementById('partner-url');
+        const copyBtn = document.getElementById('partner-copy');
+
+        let selectedLat = null;
+        let selectedLng = null;
+        let debounceTimer = null;
+
+        addressInput.addEventListener('input', () => {
+            selectedLat = null;
+            selectedLng = null;
+            clearTimeout(debounceTimer);
+            const q = addressInput.value.trim();
+            if (q.length < 3) { hideSuggestions(); return; }
+            debounceTimer = setTimeout(() => fetchSuggestions(q), 300);
+        });
+
+        addressInput.addEventListener('blur', () => {
+            setTimeout(hideSuggestions, 200);
+        });
+
+        async function fetchSuggestions(q) {
+            try {
+                const res = await fetch('/api/geocode?q=' + encodeURIComponent(q));
+                const data = await res.json();
+                renderSuggestions(data.suggestions || []);
+            } catch (_) {}
+        }
+
+        function renderSuggestions(suggestions) {
+            suggestionsBox.innerHTML = '';
+            if (suggestions.length === 0) { hideSuggestions(); return; }
+            suggestions.forEach(s => {
+                const li = document.createElement('li');
+                li.textContent = s.label;
+                li.setAttribute('role', 'option');
+                li.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    selectedLat = s.lat;
+                    selectedLng = s.lng;
+                    addressInput.value = s.label;
+                    hideSuggestions();
+                    addressError.classList.remove('visible');
+                });
+                suggestionsBox.appendChild(li);
+            });
+            suggestionsBox.hidden = false;
+        }
+
+        function hideSuggestions() {
+            suggestionsBox.hidden = true;
+            suggestionsBox.innerHTML = '';
+        }
+
+        generateBtn.addEventListener('click', () => {
+            if (selectedLat === null || selectedLng === null) {
+                addressError.classList.add('visible');
+                addressInput.focus();
+                return;
+            }
+            addressError.classList.remove('visible');
+
+            const radius = document.getElementById('partner-radius').value;
+            const days = document.getElementById('partner-days').value;
+            const url = window.location.origin
+                + '/partner/feed?lat=' + selectedLat
+                + '&lng=' + selectedLng
+                + '&radius=' + radius
+                + '&days=' + days;
+
+            urlInput.value = url;
+            resultBox.hidden = false;
+            resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(urlInput.value);
+                copyBtn.textContent = '✓ Copié !';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    copyBtn.textContent = 'Copier';
+                    copyBtn.classList.remove('copied');
+                }, 2500);
+            } catch (_) {
+                urlInput.select();
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

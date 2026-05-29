@@ -3,49 +3,61 @@ legal/mentions-legales.html.twig
 
 QUOI : Page statique des mentions légales (éditeur, hébergeur, propriété intellectuelle).
 
-COMMENT : Étend `base.html.twig` ; contenu éditorial sans logique métier.
+COMMENT : HTML autonome avec header/footer partagés et layout .prose-page.
 
 OÙ : Route `app_legal_notice` (`SystemController::legalNotice`).
 
 POURQUOI : Obligation légale pour un site édité en France.
 #}
-{% extends 'base.html.twig' %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, follow">
+    <title>Mentions légales — Opale News</title>
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+</head>
+<body>
+    {% include '_partials/_site_header.html.twig' %}
 
-{% block title %}Mentions légales — Opale News{% endblock %}
+    <main class="prose-page">
+        <h1>Mentions légales</h1>
 
-{% block body %}
-<main class="legal-page">
-    <h1>Mentions légales</h1>
+        <h2>Éditeur du site</h2>
+        <p>
+            Opale News<br>
+            Société par actions simplifiée au capital de 1&nbsp;000&nbsp;€<br>
+            Siège social&nbsp;: 1 rue de la Côte d'Opale, 62200 Boulogne-sur-Mer<br>
+            RCS Boulogne-sur-Mer — SIREN 000&nbsp;000&nbsp;000<br>
+            Directeur de la publication&nbsp;: Opale News
+        </p>
 
-    <h2>Éditeur du site</h2>
-    <p>
-        Opale News<br>
-        Société par actions simplifiée au capital de 1 000 €<br>
-        Siège social : 1 rue de la Côte d'Opale, 62200 Boulogne-sur-Mer<br>
-        RCS Boulogne-sur-Mer — SIREN 000 000 000<br>
-        Directeur de la publication : Opale News
-    </p>
+        <h2>Hébergeur</h2>
+        <p>
+            OVH SAS<br>
+            2 rue Kellermann, 59100 Roubaix, France<br>
+            Téléphone&nbsp;: +33&nbsp;9&nbsp;72&nbsp;10&nbsp;10&nbsp;07
+        </p>
 
-    <h2>Hébergeur</h2>
-    <p>
-        OVH SAS<br>
-        2 rue Kellermann, 59100 Roubaix, France<br>
-        Téléphone : +33 9 72 10 10 07
-    </p>
+        <h2>Contact</h2>
+        <p>
+            Pour toute demande relative au site, écrire à&nbsp;: contact@opale-news.example
+        </p>
 
-    <h2>Contact</h2>
-    <p>
-        Pour toute demande relative au site, écrire à : contact@opale-news.example
-    </p>
+        <h2>Propriété intellectuelle</h2>
+        <p>
+            L'ensemble des contenus présents sur le site (textes, logos, images, vidéos)
+            est la propriété d'Opale News ou de ses partenaires. Toute reproduction,
+            représentation ou diffusion, totale ou partielle, est interdite sans
+            autorisation préalable.
+        </p>
 
-    <h2>Propriété intellectuelle</h2>
-    <p>
-        L'ensemble des contenus présents sur le site (textes, logos, images, vidéos)
-        est la propriété d'Opale News ou de ses partenaires. Toute reproduction,
-        représentation ou diffusion, totale ou partielle, est interdite sans
-        autorisation préalable.
-    </p>
+        <p><a href="{{ path('app_home') }}" class="back-link">← Retour à l'accueil</a></p>
+    </main>
 
-    <p><a href="{{ path('app_home') }}">← Retour à l'accueil</a></p>
-</main>
-{% endblock %}
+    {% include '_partials/_site_footer.html.twig' %}
+    {% include '_partials/_umami.html.twig' %}
+    {% include '_partials/_cookie_consent.html.twig' %}
+</body>
+</html>

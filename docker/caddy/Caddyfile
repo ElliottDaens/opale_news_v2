@@ -20,6 +20,23 @@
     }
 }
 
+# Tableau de bord analytics Umami — accès restreint à l'équipe.
+analytics.{$SITE_DOMAIN} {
+    reverse_proxy umami:3000
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options   "nosniff"
+        X-Frame-Options          "DENY"
+        -Server
+    }
+
+    log {
+        output stdout
+        format json
+    }
+}
+
 # Redirection optionnelle www → apex.
 www.{$SITE_DOMAIN} {
     redir https://{$SITE_DOMAIN}{uri} permanent

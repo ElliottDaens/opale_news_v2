@@ -508,6 +508,26 @@ POURQUOI : Guider un formulaire long (fichiers, IA) avec un retour visuel clair 
     color: var(--c-texte-doux);
 }
 
+.thanks-edit-box {
+    margin: var(--space-md) 0 0;
+    padding: var(--space-md);
+    background: var(--c-sable-clair, #f7f5f0);
+    border: 1.5px solid var(--c-bordure, #ddd);
+    border-radius: var(--radius-md, 12px);
+    text-align: left;
+}
+
+.thanks-edit-title {
+    font-weight: 700;
+    color: var(--c-marine, #1a2e4a);
+    margin: 0 0 0.4rem;
+}
+
+.thanks-edit-link {
+    margin-top: var(--space-sm);
+    display: inline-block;
+}
+
 .thanks-actions {
     display: flex;
     gap: var(--space-sm);

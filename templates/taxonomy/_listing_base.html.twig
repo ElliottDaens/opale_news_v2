@@ -41,7 +41,13 @@ POURQUOI : Garder une cohérence visuelle entre /categorie/* et /ville/* sans du
                 <div class="events-grid">
                     {% for event in events %}
                         <a href="{{ path('app_event_show', { id: event.id, slug: event.slug }) }}" class="event-card-link">
-                            <article class="event-card">
+                            <article class="event-card{% if event.featured %} event-card--featured{% endif %}">
+                                {% if event.featured %}
+                                    <span class="event-card__featured-badge" aria-label="Événement incontournable">
+                                        <span class="event-card__featured-icon" aria-hidden="true">✦</span>
+                                        Incontournable
+                                    </span>
+                                {% endif %}
                                 <div class="event-card__header">
                                     <span class="event-card__category">{{ event.categorie }}</span>
                                     <span class="event-card__date">{{ event.formatDateRange }}</span>

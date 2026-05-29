@@ -38,7 +38,8 @@ final class EventRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('e')
             ->where('e.status = :status')
             ->setParameter('status', EventStatus::Approved)
-            ->orderBy('e.startDate', 'ASC')
+            ->orderBy('e.featured', 'DESC')
+            ->addOrderBy('e.startDate', 'ASC')
             ->getQuery()
             ->getResult();
     }
@@ -224,7 +225,8 @@ final class EventRepository extends ServiceEntityRepository
         $qb = $this->createQueryBuilder('e')
             ->where('e.status = :status')
             ->setParameter('status', EventStatus::Approved)
-            ->orderBy('e.startDate', 'ASC')
+            ->orderBy('e.featured', 'DESC')
+            ->addOrderBy('e.startDate', 'ASC')
             ->setFirstResult($offset)
             ->setMaxResults($pageSize);
 
@@ -361,5 +363,60 @@ final class EventRepository extends ServiceEntityRepository
             ->orderBy('e.startDate', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Événements à venir dans une zone géographique, pour le flux RSS partenaire.
+     *
+     * Stratégie : pré-filtre SQL via bounding box (rapide), puis post-filtre PHP Haversine
+     * pour la précision exacte du rayon. Tri : featured DESC puis startDate ASC.
+     *
+     * @return Event[]
+     */
+    public function findForPartnerFeed(float $lat, float $lng, float $radiusKm, int $days): array
+    {
+        $tz = new \DateTimeZone('Europe/Paris');
+        $today = new \DateTimeImmutable('today', $tz);
+        $until = $today->modify(sprintf('+%d days', $days));
+
+        // Bounding box : overcounts les coins, le Haversine ci-dessous corrige.
+        $latDelta = $radiusKm / 111.0;
+        $lngDelta = $radiusKm / (111.0 * cos(deg2rad($lat)));
+
+        $candidates = $this->createQueryBuilder('e')
+            ->where('e.status = :status')
+            ->andWhere('e.latitude IS NOT NULL')
+            ->andWhere('e.longitude IS NOT NULL')
+            ->andWhere('e.latitude BETWEEN :latMin AND :latMax')
+            ->andWhere('e.longitude BETWEEN :lngMin AND :lngMax')
+            ->andWhere('e.startDate <= :until')
+            ->andWhere('COALESCE(e.endDate, e.startDate) >= :today')
+            ->setParameter('status', EventStatus::Approved)
+            ->setParameter('latMin', $lat - $latDelta)
+            ->setParameter('latMax', $lat + $latDelta)
+            ->setParameter('lngMin', $lng - $lngDelta)
+            ->setParameter('lngMax', $lng + $lngDelta)
+            ->setParameter('today', $today)
+            ->setParameter('until', $until)
+            ->orderBy('e.featured', 'DESC')
+            ->addOrderBy('e.startDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return array_values(array_filter(
+            $candidates,
+            fn (Event $e): bool => $this->haversineKm($lat, $lng, (float) $e->getLatitude(), (float) $e->getLongitude()) <= $radiusKm,
+        ));
+    }
+
+    private function haversineKm(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $phi1 = deg2rad($lat1);
+        $phi2 = deg2rad($lat2);
+        $dPhi = deg2rad($lat2 - $lat1);
+        $dLambda = deg2rad($lon2 - $lon1);
+        $a = sin($dPhi / 2) ** 2 + cos($phi1) * cos($phi2) * sin($dLambda / 2) ** 2;
+
+        return 6371.0 * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 }

@@ -1,0 +1,93 @@
+{#
+about/index.html.twig
+
+QUOI : Page publique « À propos d'Opale News » — mission, zone géographique, comment soumettre / corriger, contact.
+
+COMMENT : HTML autonome avec header/footer partagés et layout .prose-page.
+
+OÙ : Route `app_about` (`SystemController::about`).
+
+POURQUOI : Bâtir la confiance des premiers utilisateurs (offices de tourisme, campings, organisateurs).
+#}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>À propos — Opale News</title>
+    <meta name="description" content="Découvrez qui est Opale News, comment fonctionne l'agenda de la Côte d'Opale et comment proposer ou corriger un événement.">
+    <link rel="canonical" href="{{ app.request.schemeAndHttpHost ~ path('app_about') }}">
+    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
+</head>
+<body>
+    {% include '_partials/_site_header.html.twig' %}
+
+    <main class="prose-page">
+        <h1>À propos d'Opale News</h1>
+
+        <h2>Notre mission</h2>
+        <p>
+            Opale News est un agenda local indépendant dédié à la <strong>Côte d'Opale</strong>
+            — du Boulonnais au Montreuillois, en passant par Le Touquet et Berck.
+            Notre objectif&nbsp;: permettre à chacun de trouver facilement <strong>quoi faire près de chez soi</strong>,
+            que ce soit un concert, un marché, un atelier, une brocante ou une sortie en famille.
+        </p>
+        <p>
+            La recherche est propulsée par de l'<strong>intelligence artificielle</strong>&nbsp;:
+            vous pouvez écrire en langage naturel (« sortie nature ce week-end », « expo photo à Boulogne »)
+            et l'agenda comprend votre intention pour vous proposer les résultats les plus pertinents.
+        </p>
+
+        <h2>Zone couverte</h2>
+        <p>
+            Nous couvrons principalement le <strong>Pas-de-Calais littoral</strong> et ses alentours&nbsp;:
+            Calais, Boulogne-sur-Mer, Le Touquet-Paris-Plage, Berck, Étaples, Montreuil-sur-Mer,
+            Hardelot, Wimereux, Wissant et les communes voisines.
+        </p>
+        <p>
+            Les événements sont visibles sur la carte interactive de la page d'accueil
+            et filtrables par catégorie, période ou distance.
+        </p>
+
+        <h2>Proposer un événement</h2>
+        <p>
+            Vous organisez un événement sur la Côte d'Opale&nbsp;?
+            <a href="{{ path('app_event_submit') }}">Soumettez-le gratuitement</a> via notre formulaire.
+            Chaque proposition est vérifiée par notre équipe avant publication (généralement sous 48&nbsp;h).
+        </p>
+        <p>
+            Après soumission, vous recevrez un email avec un lien personnel pour modifier votre fiche
+            tant qu'elle est en attente de modération.
+            Une fois publiée, vous serez notifié par email avec un lien vers votre page.
+        </p>
+
+        <h2>Signaler une erreur</h2>
+        <p>
+            Vous avez remarqué une information incorrecte (date, lieu, annulation) sur une fiche&nbsp;?
+            Rendez-vous sur la page de l'événement et utilisez le bouton <strong>« Signaler »</strong>
+            en bas de page. Notre équipe traitera votre retour dans les plus brefs délais.
+        </p>
+
+        <h2>Intégration sur votre site</h2>
+        <p>
+            Vous gérez un camping, un hôtel ou un office de tourisme sur la Côte d'Opale&nbsp;?
+            Opale News propose un <a href="{{ path('app_partner_widget') }}">flux RSS géolocalisé</a>
+            pour afficher automatiquement les événements proches de votre établissement.
+            Aucune compétence technique avancée n'est requise — un simple plugin RSS suffit.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+            Pour toute question, partenariat ou retour sur la plateforme, écrivez-nous à
+            <strong>contact@opale.news</strong>.
+            Nous répondons sous 48&nbsp;h en jours ouvrés.
+        </p>
+
+        <p><a href="{{ path('app_home') }}" class="back-link">← Retour à l'agenda</a></p>
+    </main>
+
+    {% include '_partials/_site_footer.html.twig' %}
+    {% include '_partials/_umami.html.twig' %}
+    {% include '_partials/_cookie_consent.html.twig' %}
+</body>
+</html>

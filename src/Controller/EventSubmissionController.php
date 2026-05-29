@@ -129,7 +129,9 @@ final class EventSubmissionController extends AbstractController
             $notifications->sendAdminNewEventAlert($event);
             $notifications->sendOrganizerConfirmation($event);
 
-            return $this->redirectToRoute('app_event_submit_thanks');
+            return $this->redirectToRoute('app_event_submit_thanks', [
+                't' => $event->getUpdateToken(),
+            ]);
         }
 
         return $this->render('event/submission.html.twig', [
@@ -143,9 +145,19 @@ final class EventSubmissionController extends AbstractController
      * Page de remerciement après soumission réussie (sans données sensibles).
      */
     #[Route('/proposer-un-evenement/merci', name: 'app_event_submit_thanks', methods: ['GET'])]
-    public function thanks(): Response
+    public function thanks(Request $request, EventRepository $events): Response
     {
-        return $this->render('event/submission_thanks.html.twig');
+        $token = trim((string) $request->query->get('t', ''));
+        $editUrl = null;
+
+        if ($token !== '') {
+            $event = $events->findOneByUpdateToken($token);
+            if ($event !== null) {
+                $editUrl = $this->generateUrl('app_event_edit_by_token', ['updateToken' => $token]);
+            }
+        }
+
+        return $this->render('event/submission_thanks.html.twig', ['editUrl' => $editUrl]);
     }
 
     /**

@@ -661,6 +661,30 @@ POURQUOI : Offrir une console de modération lisible sans recopier toute la char
     text-decoration: none;
 }
 
+/* Action "mettre en avant" : ghost teinté or, bascule plein-or quand actif */
+.btn--featured {
+    background-color: rgba(212, 175, 55, 0.10);
+    color: #5c4708;
+    border: 1.5px solid rgba(212, 175, 55, 0.45);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+}
+.btn--featured:hover {
+    background-color: rgba(212, 175, 55, 0.22);
+    border-color: #d4af37;
+}
+.btn--featured.is-active {
+    background: linear-gradient(135deg, #f5d76e 0%, #d4af37 100%);
+    border-color: #d4af37;
+    color: #4a3a08;
+}
+.btn--featured.is-active:hover {
+    background: linear-gradient(135deg, #efc94c 0%, #b89522 100%);
+    border-color: #b89522;
+}
+
 /* ----- Édition admin : sous-titre du header (formulaire utilise submission.css) ----- */
 
 .admin-page-header__sub {

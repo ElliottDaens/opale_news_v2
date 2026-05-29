@@ -1,0 +1,20 @@
+{#
+_partials/_umami.html.twig
+
+QUOI : Balise de tracking Umami (analytics cookieless, RGPD-friendly).
+
+COMMENT : Injectée conditionnellement selon `umami_website_id` (global Twig via env UMAMI_WEBSITE_ID).
+         `umami_script_url` pointe vers localhost:3001 en dev, analytics.{domaine} en prod.
+         Aucun cookie déposé — aucun consentement requis.
+
+OÙ : Inclus dans base.html.twig et chaque template public autonome.
+
+POURQUOI : Mesure d'audience sans bandeau, conforme CNIL par défaut.
+#}
+{%- if umami_website_id is defined and umami_website_id is not empty
+    and umami_script_url is defined and umami_script_url is not empty -%}
+<script defer
+    src="{{ umami_script_url }}"
+    data-website-id="{{ umami_website_id }}">
+</script>
+{%- endif -%}

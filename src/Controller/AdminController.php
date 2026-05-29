@@ -8,6 +8,8 @@ use App\Form\EventSubmissionType;
 use App\Repository\EventRepository;
 use App\Service\EventIndexer;
 use App\Service\ImageUploader;
+use App\Service\NotificationService;
+use App\Service\UmamiService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -38,6 +40,8 @@ final class AdminController extends AbstractController
         private readonly EventRepository $events,
         private readonly EntityManagerInterface $em,
         private readonly EventIndexer $indexer,
+        private readonly NotificationService $notifications,
+        private readonly UmamiService $umami,
         #[Autowire(env: 'GMAPS_API_KEY')] private readonly string $gmapsApiKey = '',
     ) {}
 
@@ -101,6 +105,7 @@ final class AdminController extends AbstractController
             'events' => $events,
             'currentStatus' => $filter,
             'searchQuery' => $search,
+            'viewCounts' => $this->umami->getEventViewCounts(),
             'counts' => [
                 'pending' => count($this->events->findForModeration(EventStatus::Pending)),
                 'approved' => count($this->events->findForModeration(EventStatus::Approved)),
@@ -154,6 +159,7 @@ final class AdminController extends AbstractController
         $this->em->flush();
 
         $this->indexer->index($event);
+        $this->notifications->sendOrganizerApprovalNotification($event);
 
         $this->addFlash('success', sprintf('« %s » approuvé et publié.', $event->getTitre()));
 
@@ -177,6 +183,8 @@ final class AdminController extends AbstractController
         if ($previousStatus === EventStatus::Approved) {
             $this->indexer->unindex($event);
         }
+
+        $this->notifications->sendOrganizerRejectionNotification($event, '');
 
         $this->addFlash('warning', sprintf('« %s » refusé.', $event->getTitre()));
 
@@ -205,6 +213,33 @@ final class AdminController extends AbstractController
         }
 
         $this->addFlash('info', sprintf('Modération de « %s » annulée (statut : %s).', $event->getTitre(), $event->getStatus()->label()));
+
+        return $this->redirectBack($request);
+    }
+
+    /**
+     * Bascule le statut « Incontournable » (positionnement préférentiel) d'un événement.
+     *
+     * Comment : CSRF `featured{id}` ; toggle booléen ; resynchronise la metadata Pinecone si visible publiquement.
+     */
+    #[Route('/admin/events/{id}/toggle-featured', name: 'app_admin_event_toggle_featured', methods: ['POST'])]
+    public function toggleFeatured(Event $event, Request $request): Response
+    {
+        $this->verifyCsrf('featured' . $event->getId(), $request);
+
+        $event->setFeatured(!$event->isFeatured());
+        $this->em->flush();
+
+        if ($event->getStatus()->isVisiblePublicly()) {
+            $this->indexer->index($event);
+        }
+
+        $this->addFlash(
+            'success',
+            $event->isFeatured()
+                ? sprintf('« %s » est désormais mis en avant.', $event->getTitre())
+                : sprintf('« %s » n\'est plus mis en avant.', $event->getTitre()),
+        );
 
         return $this->redirectBack($request);
     }
